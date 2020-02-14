@@ -8,6 +8,10 @@
 #define LOG_LEVEL_INFO         3 /* Basic info */
 #define LOG_LEVEL_DBG          4 /* Detailled debug */
 
+/*------------------------------------------------------------------------------*/
+#include "project-conf.h" // make sure the LOG_LEVELS defined
+
+/*------------------------------------------------------------------------------*/
 extern int print_with_func_line; // defined in test.c
 
 #define LOG(with_level_str, level, level_str, ...) do {  \
@@ -23,12 +27,14 @@ extern int print_with_func_line; // defined in test.c
                             } \
                           } while (0)
 
+/*------------------------------------------------------------------------------*/
 #define LOG_PRINT(...)          LOG(1, LOG_LEVEL_NONE, "PRI : ", __VA_ARGS__)
 #define LOG_ERR(...)            LOG(1, LOG_LEVEL_ERR, "ERR : ", __VA_ARGS__)
 #define LOG_WARN(...)           LOG(1, LOG_LEVEL_WARN, "WARN: ", __VA_ARGS__)
 #define LOG_INFO(...)           LOG(1, LOG_LEVEL_INFO, "INFO: ", __VA_ARGS__)
 #define LOG_DBG(...)            LOG(1, LOG_LEVEL_DBG, "DBG : ", __VA_ARGS__)
 
+/*------------------------------------------------------------------------------*/
 #define LOG_PRINT_(...)         LOG(0, LOG_LEVEL_NONE, "PRI : ", __VA_ARGS__)
 #define LOG_ERR_(...)           LOG(0, LOG_LEVEL_ERR, "ERR : ", __VA_ARGS__)
 #define LOG_WARN_(...)          LOG(0, LOG_LEVEL_WARN, "WARN: ", __VA_ARGS__)
