@@ -7,5 +7,6 @@
 
 /*------------------------------------------------------------------------------*/
 #define GRAY_SCALE_IMAGE_PATH "images/grayscale.bmp"
+#define BINARY_SCALE_IMAGE_PATH "images/binary.bmp"
 
 #endif /* PROJECT_CONF_H_ */

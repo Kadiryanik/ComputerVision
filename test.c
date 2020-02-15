@@ -20,11 +20,15 @@ void usage(const char *);
 /*------------------------------------------------------------------------------*/
 int main(int argc, char *argv[]){
   int c;
+  char *to_binary = NULL;
   char *to_grayscale = NULL;
   char *test_bmp = NULL;
 
-  while((c = getopt(argc, argv, "g:t:hD")) != -1){
+  while((c = getopt(argc, argv, "b:g:t:hD")) != -1){
     switch(c){
+      case 'b':
+        to_binary = optarg;
+        break;
       case 'g':
         to_grayscale = optarg;
         break;
@@ -43,6 +47,10 @@ int main(int argc, char *argv[]){
 
   LOG_DBG("option parse done!\n");
 
+  if(to_binary != NULL){
+    convert_binary(to_binary);
+    return 0;
+  }
   if(to_grayscale != NULL){
     convert_grayscale(to_grayscale);
     return 0;
@@ -64,6 +72,7 @@ void usage(const char *name){
   LOG_PRINT_("\t-h\tprint usage\n");
   LOG_PRINT_("\t-D\tprint with called function name and called line\n");
   LOG_PRINT_("\t\b\bOptions with arguments\n");
+  LOG_PRINT_("\t-b\tconvert given rgb image to binary image\n");
   LOG_PRINT_("\t-g\tconvert given rgb image to gray scale image\n");
   LOG_PRINT_("\t-t\ttest the given bmp file readability\n");
   LOG_PRINT_("Example:\n");

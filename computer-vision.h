@@ -4,6 +4,7 @@
 #include "bmp.h"
 
 /*------------------------------------------------------------------------------*/
+void convert_binary(const char *filename);
 void convert_grayscale(const char *filename);
 void test_bmp_file(const char *filename);
 
