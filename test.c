@@ -13,6 +13,7 @@
 
 /*------------------------------------------------------------------------------*/
 int print_with_func_line = 0; // accessed by log.h
+int plot_with_python = 0; // accessed by computer-vision.c
 
 /*------------------------------------------------------------------------------*/
 void usage(const char *);
@@ -24,7 +25,7 @@ int main(int argc, char *argv[]){
   char *to_grayscale = NULL;
   char *test_bmp = NULL;
 
-  while((c = getopt(argc, argv, "b:g:t:hD")) != -1){
+  while((c = getopt(argc, argv, "b:g:t:hDP")) != -1){
     switch(c){
       case 'b':
         to_binary = optarg;
@@ -37,6 +38,9 @@ int main(int argc, char *argv[]){
         break;
       case 'D':
         print_with_func_line = 1;
+        break;
+      case 'P':
+        plot_with_python = 1;
         break;
       case 'h':
       default:
@@ -71,6 +75,7 @@ void usage(const char *name){
   LOG_PRINT_("\t\b\bOptions with no arguments\n");
   LOG_PRINT_("\t-h\tprint usage\n");
   LOG_PRINT_("\t-D\tprint with called function name and called line\n");
+  LOG_PRINT_("\t-P\tplot graphics with python\n");
   LOG_PRINT_("\t\b\bOptions with arguments\n");
   LOG_PRINT_("\t-b\tconvert given rgb image to binary image\n");
   LOG_PRINT_("\t-g\tconvert given rgb image to gray scale image\n");
@@ -79,4 +84,5 @@ void usage(const char *name){
   LOG_PRINT_("\t%s -g image.bmp\n", name);
   LOG_PRINT_("\t%s -D -t image.bmp\n", name);
   LOG_PRINT_("\t%s -Dt image.bmp\n", name);
+  LOG_PRINT_("\t%s -Pb image.bmp\n", name);
 }
