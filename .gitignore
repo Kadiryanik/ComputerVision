@@ -1,3 +1,6 @@
-test
+obj
 images/*.bmp
+test
 *.txt
+*.vim
+*.out
