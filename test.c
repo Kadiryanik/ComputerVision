@@ -14,8 +14,15 @@
 #endif /* LOG_LEVEL_CONF_TEST */
 
 /*------------------------------------------------------------------------------*/
+#define OPT_TEST_BMP	(0x01 << 0)
+#define OPT_BINARY	(0x01 << 1)
+#define OPT_GRAYSCALE	(0x01 << 2)
+#define OPT_DRAW_TESTS	(0x01 << 3)
+
+/*------------------------------------------------------------------------------*/
 int print_with_func_line = 0;	/* accessed by log.h */
-int plot_with_python = 0;	/* accessed by computer-vision.c */
+int verbose_output_enabled = 0;	/* accessed by log.h */
+int plot_with_python = 0;	/* accessed by util.c */
 
 /*------------------------------------------------------------------------------*/
 void usage(const char *);
@@ -24,23 +31,36 @@ void usage(const char *);
 int main(int argc, char *argv[])
 {
     int ret = 0;
-    char c = 0, *to_binary = NULL, *to_grayscale = NULL, *test_bmp = NULL;
+    char c = 0, *input_image = NULL;
+    uint8_t option_mask = 0;
 
-    while ((c = getopt(argc, argv, "b:g:t:hDP")) != -1) {
+    while ((c = getopt(argc, argv, "i:tbgdvDPh")) != -1) {
 	switch(c) {
-	    case 'b':
-		to_binary = optarg;
-		break;
-	    case 'g':
-		to_grayscale = optarg;
+	    case 'i':
+		input_image = optarg;
 		break;
 	    case 't':
-		test_bmp = optarg;
+		option_mask |= OPT_TEST_BMP;
+		break;
+	    case 'b':
+		option_mask |= OPT_BINARY;
+		break;
+	    case 'g':
+		option_mask |= OPT_GRAYSCALE;
+		break;
+	    case 'd':
+		option_mask |= OPT_DRAW_TESTS;
+		break;
+	    case 'v':
+		/* opens all log levels */
+		verbose_output_enabled = 1;
 		break;
 	    case 'D':
+		/* adds line number current logs */
 		print_with_func_line = 1;
 		break;
 	    case 'P':
+		/* plot histogram array with python */
 		plot_with_python = 1;
 		break;
 	    case 'h':
@@ -49,19 +69,34 @@ int main(int argc, char *argv[])
 	}
     }
 
-    if (to_binary != NULL) {
+    if ((input_image == NULL) || (option_mask == 0)) {
+	goto fail;
+    }
+
+#if !LOG_FEATURE_ENABLED
+    if (verbose_output_enabled) {
+	fprintf(stderr, "Compile by setting the LOG_FEATURE_ENABLED flag for verbose output!\n");
+    }
+#endif
+
+    if (option_mask & OPT_TEST_BMP) {
+	(void)test_bmp_file(input_image);
+    }
+    if (option_mask & OPT_BINARY) {
 	srand(time(NULL));
-	(void)convert_binary(to_binary);
-	goto success;
+	(void)convert_binary(input_image);
     }
-    if (to_grayscale != NULL) {
-	(void)convert_grayscale(to_grayscale);
-	goto success;
+    if (option_mask & OPT_GRAYSCALE) {
+	(void)convert_grayscale(input_image);
     }
-    if (test_bmp != NULL) {
-	(void)test_bmp_file(test_bmp);
-	goto success;
+    if (option_mask & OPT_DRAW_TESTS) {
+	plus_t plus = { .x = 60, .y = 60, .len = 40 };
+	rectangle_t rect = { .x = 60, .y = 60, .width = 60, .height = 40 };
+	circle_t circle = { .x = 60, .y = 60, .r = 20 };
+	ellipse_t ellipse = { .x = 60, .y = 60, .a = 30, .b = 60 };
+	(void)draw_tests(input_image, plus, rect, circle, ellipse);
     }
+    goto success;
 
 fail:
     usage(argv[0]);
@@ -74,19 +109,21 @@ success:
 /*------------------------------------------------------------------------------*/
 void usage(const char *name)
 {
-    fprintf(stderr, "Usage: %s [-hD] [-g <*.bmp>] [-t <*.bmp>]\n"
+    fprintf(stderr, "Usage: %s [-i <*.bmp>] [-tbgdvDPh]\n"
 		    "\t\b\bOptions with no arguments\n"
 		    "\t-h\tprint usage\n"
+		    "\t-b\tconvert input rgb image to binary image\n"
+		    "\t-g\tconvert input rgb image to gray scale image\n"
+		    "\t-t\ttest the input bmp file readability\n"
+		    "\t-v\tenable verbose output\n"
 		    "\t-D\tprint with called function name and called line\n"
 		    "\t-P\tplot graphics with python\n"
 		    "\t\b\bOptions with arguments\n"
-		    "\t-b\tconvert given rgb image to binary image\n"
-		    "\t-g\tconvert given rgb image to gray scale image\n"
 		    "\t-t\ttest the given bmp file readability\n"
 		    "Example:\n"
-		    "\t%s -g image.bmp\n"
-		    "\t%s -D -t image.bmp\n"
-		    "\t%s -Dt image.bmp\n"
-		    "\t%s -Pb image.bmp\n",
+		    "\t%s -gi image.bmp\n"
+		    "\t%s -Pbi image.bmp\n"
+		    "\t%s -D -t -i image.bmp\n"
+		    "\t%s -vPDbgdi image.bmp\n",
 		    name, name, name, name, name);
 }

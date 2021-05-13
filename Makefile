@@ -10,6 +10,9 @@ CFLAGS += -I. -Iinclude
 # library directories
 LIB_DIRS = . src/
 
+# libraries
+LIBS = -lm
+
 # set source files and object files under LIB_DIRS
 SOURCE_FILES = ${foreach d, $(LIB_DIRS), ${subst ${d}/,,${wildcard $(d)/*.c}}}
 OBJ_FILES := $(SOURCE_FILES:%.c=$(OBJDIR)/%.o)
@@ -26,7 +29,7 @@ Q=@
 # rules
 build: $(OBJDIR) $(OBJ_FILES)
 	$(Q)echo " LINK"
-	$(CC) -o test $(OBJ_FILES)
+	$(CC) -o test $(OBJ_FILES) $(LIBS)
 $(OBJDIR)/%.o: %.c
 	$(TRACE_CC)
 	$(Q)$(CC) $(CFLAGS) -c $< -o $@

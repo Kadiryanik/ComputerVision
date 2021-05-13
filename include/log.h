@@ -13,6 +13,7 @@
 
 /*------------------------------------------------------------------------------*/
 extern int print_with_func_line;    /* defined in test.c */
+extern int verbose_output_enabled;  /* defined in test.c */
 
 #ifndef LOG_FEATURE_ENABLED
 #define LOG_FEATURE_ENABLED 0
@@ -20,18 +21,18 @@ extern int print_with_func_line;    /* defined in test.c */
 
 #if LOG_FEATURE_ENABLED
 
-#define LOG(with_level_str, level, level_str, ...) do {	    \
-	if (level <= (LOG_LEVEL)) {			    \
-	    if (with_level_str) {			    \
-		if (print_with_func_line) {		    \
-		    printf("%s[%s %d]: ", level_str,	    \
-			    __FUNCTION__, __LINE__);	    \
-		} else {				    \
-		    printf("%s", level_str);		    \
-		}					    \
-	    }						    \
-	    printf(__VA_ARGS__);			    \
-	}						    \
+#define LOG(with_level_str, level, level_str, ...) do {		\
+	if (verbose_output_enabled || (level <= (LOG_LEVEL))) {	\
+	    if (with_level_str) {				\
+		if (print_with_func_line) {			\
+		    printf("%s[%s %d]: ", level_str,		\
+			    __FUNCTION__, __LINE__);		\
+		} else {					\
+		    printf("%s", level_str);			\
+		}						\
+	    }							\
+	    printf(__VA_ARGS__);				\
+	}							\
     } while (0)
 
 #else /* LOG_FEATURE_ENABLED */

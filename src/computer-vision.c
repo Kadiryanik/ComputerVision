@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "computer-vision.h"
 #include "log.h"
@@ -14,24 +15,31 @@
 /*------------------------------------------------------------------------------*/
 int convert_binary(const char *filename)
 {
-    int ret = 0;
-    int i = 0, threshold = 0, width = 0, height = 0, size = 0;
-    uint8_t *buffer = NULL, *intensity = NULL, *binary_image = NULL, *binary_image_bmp = NULL;
+    int ret = 0, threshold = 0;
+    uint32_t i = 0;
+    image_t *image = NULL, *intensity = NULL, *binary_image = NULL,
+	    *binary_image_bmp = NULL;
 
     LOG_DBG("Trying to convert '%s' to binary!\n", filename);
 
-    util_fit(((buffer = bmp_load(filename, &width, &height, &size)) == NULL));
-    util_fit(((intensity = convert_bmp_to_intensity(buffer, width, height)) == NULL));
-    util_fit(((threshold = kmeans_get_thold(2, intensity, width, height)) < 0));
+    util_fit(((image = bmp_load(filename)) == NULL));
+    util_fit(((intensity = convert_bmp_to_intensity(*image)) == NULL));
+    util_fit(((threshold = kmeans_get_thold(2, *intensity)) < 0));
 
-    util_fite(((binary_image = (uint8_t *)malloc((width * height) * sizeof(uint8_t))) == NULL),
-	    LOG_ERR("Binary-image buffer allocation failed!\n"));
-    for (i = 0; i < width * height; i++) {
-	binary_image[i] = (intensity[i] > threshold) ? 255 : 0;
+    /* Allocate image and copy size fields into it.
+     * Ignore the buf pointer we will set before use */
+    util_fite(((binary_image = (image_t *)calloc(1, sizeof(image_t))) == NULL),
+	    LOG_ERR("BinaryImage allocation failed!\n"));
+    memcpy(binary_image, intensity, sizeof(image_t));
+
+    util_fite(((binary_image->buf = (uint8_t *)malloc(binary_image->size *
+	    sizeof(uint8_t))) == NULL), LOG_ERR("BinaryImage data allocation failed!\n"));
+    for (i = 0; i < binary_image->size; i++) {
+	binary_image->buf[i] = (intensity->buf[i] > threshold) ? 255 : 0;
     }
 
-    util_fit(((binary_image_bmp = convert_intensity_to_bmp(binary_image, width, height, &size)) == NULL));
-    util_fit((bmp_save(BINARY_SCALE_IMAGE_PATH, width, height, binary_image_bmp) != 0));
+    util_fit(((binary_image_bmp = convert_intensity_to_bmp(*binary_image)) == NULL));
+    util_fit((bmp_save(BINARY_SCALE_IMAGE_PATH, *binary_image_bmp) != 0));
 
     LOG_INFO("'%s' succesfully saved!\n", BINARY_SCALE_IMAGE_PATH);
     goto success;
@@ -41,25 +49,25 @@ fail:
     ret = -1;
 
 success:
-    sfree(buffer);
-    sfree(intensity);
-    sfree(binary_image);
-    sfree(binary_image_bmp);
+    sfree_image(image);
+    sfree_image(intensity);
+    sfree_image(binary_image);
+    sfree_image(binary_image_bmp);
     return ret;
 }
 
 /*------------------------------------------------------------------------------*/
 int convert_grayscale(const char *filename)
 {
-    int ret = 0, width = 0, height = 0, size = 0;
-    uint8_t *buffer = NULL, *intensity = NULL, *gray_scale_bmp_data = NULL;
+    int ret = 0;
+    image_t *image = NULL, *intensity = NULL, *gray_scale_image = NULL;
 
     LOG_DBG("Trying to convert '%s' to gray scale!\n", filename);
 
-    util_fit(((buffer = bmp_load(filename, &width, &height, &size)) == NULL));
-    util_fit(((intensity = convert_bmp_to_intensity(buffer, width, height)) == NULL));
-    util_fit(((gray_scale_bmp_data = convert_intensity_to_bmp(intensity, width, height, &size)) == NULL));
-    util_fit(((bmp_save(GRAY_SCALE_IMAGE_PATH, width, height, gray_scale_bmp_data)) != 0));
+    util_fit(((image = bmp_load(filename)) == NULL));
+    util_fit(((intensity = convert_bmp_to_intensity(*image)) == NULL));
+    util_fit(((gray_scale_image = convert_intensity_to_bmp(*intensity)) == NULL));
+    util_fit(((bmp_save(GRAY_SCALE_IMAGE_PATH, *gray_scale_image)) != 0));
 
     LOG_INFO("'%s' succesfully saved!\n", GRAY_SCALE_IMAGE_PATH);
     goto success;
@@ -69,21 +77,55 @@ fail:
     ret = -1;
 
 success:
-    sfree(buffer);
-    sfree(intensity);
-    sfree(gray_scale_bmp_data);
+    sfree_image(image);
+    sfree_image(intensity);
+    sfree_image(gray_scale_image);
+    return ret;
+}
+
+/*------------------------------------------------------------------------------*/
+int draw_tests(const char *filename, plus_t plus, rectangle_t rect,
+	circle_t circle, ellipse_t ellipse)
+{
+    int ret = 0;
+    image_t *image = NULL, *intensity = NULL, *draw_test_image = NULL;
+
+    LOG_DBG("Trying to draw shapes!\n");
+
+    util_fit(((image = bmp_load(filename)) == NULL));
+    util_fit(((intensity = convert_bmp_to_intensity(*image)) == NULL));
+
+    draw_plus(*intensity, plus);
+    draw_rect(*intensity, rect);
+    draw_circle(*intensity, circle);
+    draw_ellipse(*intensity, ellipse);
+
+    util_fit(((draw_test_image = convert_intensity_to_bmp(*intensity)) == NULL));
+    util_fit(((bmp_save(DRAW_TEST_IMAGE_PATH, *draw_test_image)) != 0));
+
+    LOG_INFO("'%s' succesfully saved!\n", DRAW_TEST_IMAGE_PATH);
+    goto success;
+
+fail:
+    LOG_ERR("%s failed!\n\n", __func__);
+    ret = -1;
+
+success:
+    sfree_image(image);
+    sfree_image(intensity);
+    sfree_image(draw_test_image);
     return ret;
 }
 
 /*------------------------------------------------------------------------------*/
 int test_bmp_file(const char *filename)
 {
-    int ret = 0, width = 0, height = 0, size = 0;
-    uint8_t *buffer = NULL;
+    int ret = 0;
+    image_t *image = NULL;
 
     LOG_PRINT_("Trying to load '%s'\n", filename);
 
-    util_fit(((buffer = bmp_load(filename, &width, &height, &size)) == NULL));
+    util_fit(((image = bmp_load(filename)) == NULL));
 
     LOG_PRINT_("File load succeed!\n");
     goto success;
@@ -93,7 +135,7 @@ fail:
     ret = -1;
 
 success:
-    sfree(buffer);
+    sfree_image(image);
     return ret;
 }
 

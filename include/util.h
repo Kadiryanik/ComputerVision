@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+/*------------------------------------------------------------------------------*/
 #define sfree(_p) do {	    \
 	if ((_p)) {	    \
 	    free((_p));	    \
@@ -10,6 +11,7 @@
 	}		    \
     } while (0)
 
+/*------------------------------------------------------------------------------*/
 /* Goto fail in error with expression */
 #define util_fiee(f,e) do { \
 	if ((f) != 0) {	    \
@@ -20,6 +22,7 @@
 
 #define util_fie(f) util_fiee(f,{ do { } while (0); })
 
+/*------------------------------------------------------------------------------*/
 /* Goto fail/success in condition true with expression */
 #define util_xite(c,l,e) do {	\
 	if (c) {		\
@@ -35,6 +38,54 @@
 #define util_sit(c) util_xite(c,success,{ do { } while (0); })
 #define util_site(c,e) util_xite(c,success,e)
 
+/*------------------------------------------------------------------------------*/
+typedef struct {
+    uint8_t *buf;
+    uint32_t width;
+    uint32_t height;
+    uint32_t size;
+} image_t;
+
+#define sfree_image(_image) do {    \
+	if (_image) {		    \
+	    sfree(_image->buf);	    \
+	    sfree(_image);	    \
+	}			    \
+    } while (0)
+
+/*------------------------------------------------------------------------------*/
+typedef struct {
+    int32_t x;
+    int32_t y;
+    int32_t len;
+} plus_t;
+
+typedef struct {
+    int32_t x;
+    int32_t y;
+    int32_t width;
+    int32_t height;
+} rectangle_t;
+
+typedef struct {
+    int32_t x;
+    int32_t y;
+    int32_t r;
+} circle_t;
+
+typedef struct {
+    int32_t x;
+    int32_t y;
+    int32_t a;
+    int32_t b;
+} ellipse_t;
+
+/*------------------------------------------------------------------------------*/
 int plot_histogram(const uint32_t* const histogram);
+
+void draw_plus(image_t image, plus_t plus);
+void draw_rect(image_t image, rectangle_t rect);
+void draw_circle(image_t image, circle_t circle);
+void draw_ellipse(image_t image, ellipse_t ellipse);
 
 #endif /* UTIL_H_ */

@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "util.h"
+
 /*------------------------------------------------------------------------------*/
 /* TODO: remove attribute packed */
 typedef struct bitmap_file_header {
@@ -28,16 +30,10 @@ typedef struct bitmap_info_header {
     uint32_t clr_important;	/* 4: Important colours */
 } __attribute__((packed)) bitmap_info_header_t;
 
-typedef struct {
-    uint8_t b;
-    uint8_t g;
-    uint8_t r;
-} rgb_data;
-
 /*------------------------------------------------------------------------------*/
-uint8_t* bmp_load(const char *filename, int *width, int *height, int *size);
-int bmp_save(const char *filename, int width, int height, uint8_t *data);
-uint8_t* convert_bmp_to_intensity(uint8_t *buffer, int width, int height);
-uint8_t* convert_intensity_to_bmp(uint8_t *buffer, int width, int height, int *newsize);
+image_t* bmp_load(const char *filename);
+int bmp_save(const char *filename, image_t image);
+image_t* convert_bmp_to_intensity(image_t image);
+image_t* convert_intensity_to_bmp(image_t image);
 
 #endif /* BMP_H_ */

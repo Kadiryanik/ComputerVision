@@ -75,19 +75,19 @@ static void reset_clusters()
 /*
  * add_point_to_cluster adds point into cluster which has minimum distance.
  */
-static void add_point_to_cluster(int p, int histogram_val)
+static void add_point_to_cluster(int index, int histogram_val)
 {
     uint8_t i = 0, min = 0, min_index = 0;
 
-    min = abs(clusters[0].c - p);
+    min = abs(clusters[0].c - index);
     for (i = 1; i < cluster_num; i++) {
-	uint8_t current_distance = abs(clusters[i].c - p);
+	uint8_t current_distance = abs(clusters[i].c - index);
 	if (current_distance < min) {
 	    min = current_distance;
 	    min_index = i;
 	}
     }
-    clusters[min_index].sum += p * histogram_val;
+    clusters[min_index].sum += index * histogram_val;
     clusters[min_index].content_sum += histogram_val;
 }
 
@@ -131,7 +131,7 @@ success:
 /* TODO: seperate this function for (n != 2) cases.
  * kmeans_get_thold return threshold value for converting image into binary.
  */
-int kmeans_get_thold(uint8_t n, const uint8_t* const intensity, int width, int height)
+int kmeans_get_thold(uint8_t n, image_t image)
 {
     int ret = 0;
     uint32_t *histogram = NULL, i = 0;
@@ -141,9 +141,7 @@ int kmeans_get_thold(uint8_t n, const uint8_t* const intensity, int width, int h
     util_fit(((clusters = (cluster_t *)calloc(n, sizeof(cluster_t))) == NULL));
     cluster_num = n;
 
-    for (i = 0; i < width * height; i++) {
-	histogram[intensity[i]]++;
-    }
+    for (i = 0; i < image.size; i++) histogram[image.buf[i]]++;
 
     util_fite((plot_histogram(histogram) != 0),
 	    LOG_ERR("Threshold plotting failed!\n"));
@@ -154,9 +152,7 @@ int kmeans_get_thold(uint8_t n, const uint8_t* const intensity, int width, int h
 	reset_clusters();
 
 	/* new clustering */
-	for (i = 0; i < HISTOGRAM_LENGTH; i++) {
-	    add_point_to_cluster(i, histogram[i]);
-	}
+	for (i = 0; i < HISTOGRAM_LENGTH; i++) add_point_to_cluster(i, histogram[i]);
 
 	/* calculate new cluster centroid */
 	calc_new_centroids();
