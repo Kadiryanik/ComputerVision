@@ -65,6 +65,7 @@ image_t* bmp_load(const char *filename)
     image->width = bmp_info_header.width;
     image->height = abs(bmp_info_header.height);
     image->size = buffer_size;
+    image->colour_bytes = bmp_info_header.bit_count / 8;
 
     LOG_DBG("Reading Done!\n");
     goto success;
@@ -91,7 +92,7 @@ int bmp_save(const char *filename, image_t image)
     /* initialize */
     memset(&bmp_file_header, 0, sizeof(bitmap_file_header_t));
     memset(&bmp_info_header, 0, sizeof(bitmap_info_header_t));
-    size = image.width * image.height * 3;
+    size = image.width * image.height * image.colour_bytes;
 
     /* fill headers */
     bmp_file_header.type = BITMAP_FILE_TYPE;
@@ -140,7 +141,7 @@ image_t* convert_bmp_to_intensity(image_t image)
 	    LOG_ERR("Parameters are not valid!\n"));
 
     /* find the number of padding bytes */
-    padded_width = image.width * 3;
+    padded_width = image.width * image.colour_bytes;
     while ((padded_width % (sizeof(uint32_t))) != 0) padded_width++;
 
     util_fite(((new_image = (image_t *)calloc(1, sizeof(image_t))) == NULL),
@@ -164,6 +165,7 @@ image_t* convert_bmp_to_intensity(image_t image)
 
     new_image->width = image.width;
     new_image->height = image.height;
+    new_image->colour_bytes = 1;
     goto success;
 
 fail:
@@ -194,6 +196,7 @@ image_t* convert_intensity_to_bmp(image_t image)
 
     util_fite(((new_image->buf = (uint8_t *)malloc((new_image->size) *
 	    sizeof(uint8_t))) == NULL), LOG_ERR("Image data allocation failed\n"));
+    new_image->colour_bytes = 3;
 
     // 8-bit to 24-bit, set RGB with same value
     for (row = 0; row < image.height; row++) {
@@ -201,7 +204,7 @@ image_t* convert_intensity_to_bmp(image_t image)
 	    /* position in original buffer */
 	    buf_pos = row * image.width + column;
 	    /* position in padded buffer */
-	    new_pos = (image.height - row - 1) * padded_width + column * 3;
+	    new_pos = (image.height - row - 1) * padded_width + column * new_image->colour_bytes;
 
 	    new_image->buf[new_pos] = image.buf[buf_pos];	/* blue */
 	    new_image->buf[new_pos + 1] = image.buf[buf_pos];	/* green */
@@ -218,5 +221,66 @@ fail:
 
 success:
     return new_image;
+}
+
+/*------------------------------------------------------------------------------*/
+/*     ^
+ *  x,height  <- y,width ->
+ *     v
+ */
+image_t* crop_bmp_image(image_t image, rectangle_t rect)
+{
+    image_t *cropped_image = NULL;
+    int32_t i = 0, j = 0, new_pos_i = 0, new_pos_j = 0;
+
+    if (rect.x >= image.height || rect.y >= image.width || rect.x +
+	    rect.height >= image.height || rect.y + rect.width >= image.width) {
+	LOG_ERR("Parameters are not valid for this image! [w:%u, h:%u]\n", image.width, image.height);
+	goto fail;
+    }
+    util_fite(((cropped_image = (image_t *)calloc(1, sizeof(image_t))) == NULL),
+	    LOG_ERR("Image allocation failed\n"));
+
+    cropped_image->colour_bytes = image.colour_bytes;
+    cropped_image->width = rect.width * cropped_image->colour_bytes;
+    if (image.colour_bytes > 1) {
+	while ((cropped_image->width % (sizeof(uint32_t))) != 0) cropped_image->width++;
+    }
+    cropped_image->height = rect.height;
+    cropped_image->size = cropped_image->width * cropped_image->height;
+
+    util_fite(((cropped_image->buf = (uint8_t *)malloc((cropped_image->size) *
+		sizeof(uint8_t))) == NULL), LOG_ERR("Image data allocation failed\n"));
+
+    if (image.colour_bytes > 1) {
+	uint32_t k = 0, padded_width = image.width * image.colour_bytes;
+	while ((padded_width % (sizeof(uint32_t))) != 0) padded_width++;
+
+	for (i = image.height - rect.x - 1, new_pos_i = rect.height - 1; new_pos_i >= 0; i--, new_pos_i--) {
+	    for (j = 0; j < rect.width; j++) {
+		uint32_t buf_pos = i * padded_width + (j + rect.y) * image.colour_bytes,
+			 new_pos = new_pos_i * cropped_image->width + j * image.colour_bytes;
+		for (k = 0; k < image.colour_bytes; k++) {
+		    cropped_image->buf[new_pos + k] = image.buf[buf_pos + k];
+		}
+	    }
+	}
+    } else {
+	for (i = rect.x, new_pos_i = 0; i < rect.x + rect.height; i++, new_pos_i++) {
+	    for (j = rect.y, new_pos_j = 0;
+		    j < rect.y + rect.width * cropped_image->colour_bytes; j++, new_pos_j++) {
+		cropped_image->buf[new_pos_i * rect.width + new_pos_j] = image.buf[i * image.width + j];
+	    }
+	}
+    }
+
+    cropped_image->width = rect.width;
+    goto success;
+
+fail:
+    sfree_image(cropped_image);
+
+success:
+    return cropped_image;
 }
 

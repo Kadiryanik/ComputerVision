@@ -31,9 +31,10 @@ typedef struct bitmap_info_header {
 } __attribute__((packed)) bitmap_info_header_t;
 
 /*------------------------------------------------------------------------------*/
-image_t* bmp_load(const char *filename);
-int bmp_save(const char *filename, image_t image);
-image_t* convert_bmp_to_intensity(image_t image);
-image_t* convert_intensity_to_bmp(image_t image);
+image_t* bmp_load(const char *);
+int bmp_save(const char *, image_t);
+image_t* convert_bmp_to_intensity(image_t);
+image_t* convert_intensity_to_bmp(image_t);
+image_t* crop_bmp_image(image_t, rectangle_t);
 
 #endif /* BMP_H_ */

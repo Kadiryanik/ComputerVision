@@ -13,5 +13,6 @@
 #define BINARY_SCALE_IMAGE_PATH	    "images/binary.bmp"
 #define GRAY_SCALE_IMAGE_PATH	    "images/grayscale.bmp"
 #define DRAW_TEST_IMAGE_PATH	    "images/draw-test.bmp"
+#define CROP_TEST_IMAGE_PATH	    "images/cropped.bmp"
 
 #endif /* PROJECT_CONF_H_ */

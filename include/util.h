@@ -41,6 +41,7 @@
 /*------------------------------------------------------------------------------*/
 typedef struct {
     uint8_t *buf;
+    uint8_t colour_bytes;
     uint32_t width;
     uint32_t height;
     uint32_t size;
@@ -81,11 +82,11 @@ typedef struct {
 } ellipse_t;
 
 /*------------------------------------------------------------------------------*/
-int plot_histogram(const uint32_t* const histogram);
+int plot_histogram(const uint32_t* const);
 
-void draw_plus(image_t image, plus_t plus);
-void draw_rect(image_t image, rectangle_t rect);
-void draw_circle(image_t image, circle_t circle);
-void draw_ellipse(image_t image, ellipse_t ellipse);
+void draw_plus(image_t, plus_t);
+void draw_rect(image_t, rectangle_t);
+void draw_circle(image_t, circle_t);
+void draw_ellipse(image_t, ellipse_t);
 
 #endif /* UTIL_H_ */
