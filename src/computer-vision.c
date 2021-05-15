@@ -1,3 +1,11 @@
+/**
+ * \file
+ *	ComputerVision/ImageProcessing functions
+ *
+ * \author
+ *	Kadir Yanık <kdrynkk@gmail.com>
+ */
+
 #include <stdlib.h>
 #include <string.h>
 

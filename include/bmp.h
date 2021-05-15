@@ -1,3 +1,11 @@
+/**
+ * \file
+ *	BMP functions
+ *
+ * \author
+ *	Kadir Yanık <kdrynkk@gmail.com>
+ */
+
 #ifndef BMP_H_
 #define BMP_H_
 

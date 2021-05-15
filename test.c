@@ -1,8 +1,16 @@
+/**
+ * \file
+ *        Testing tool
+ *
+ * \author
+ *        Kadir Yanık <kdrynkk@gmail.com>
+ */
+
 #include <stdio.h>
-#include <stdlib.h> // srand
-#include <time.h>   // time
-#include <unistd.h> // getopt
-#include <string.h> // strstr
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <time.h>
 #include <errno.h>
 #include <limits.h>
 

@@ -1,3 +1,11 @@
+/**
+ * \file
+ *        K-Means implementation
+ *
+ * \author
+ *        Kadir Yanık <kdrynkk@gmail.com>
+ */
+
 #ifndef K_MEANS_H_
 #define K_MEANS_H_
 

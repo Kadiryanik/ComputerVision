@@ -1,3 +1,11 @@
+/**
+ * \file
+ *        Logging features
+ *
+ * \author
+ *        Kadir Yanık <kdrynkk@gmail.com>
+ */
+
 #ifndef LOG_H_
 #define LOG_H_
 

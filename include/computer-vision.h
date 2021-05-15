@@ -1,3 +1,11 @@
+/**
+ * \file
+ *	ComputerVision/ImageProcessing functions
+ *
+ * \author
+ *	Kadir Yanık <kdrynkk@gmail.com>
+ */
+
 #ifndef COMPUTER_VISION_H_
 #define COMPUTER_VISION_H_
 

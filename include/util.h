@@ -1,3 +1,11 @@
+/**
+ * \file
+ *	Utilities
+ *
+ * \author
+ *	Kadir Yanık <kdrynkk@gmail.com>
+ */
+
 #ifndef UTIL_H_
 #define UTIL_H_
 
