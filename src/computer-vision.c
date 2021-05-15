@@ -13,6 +13,7 @@
 #include "log.h"
 #include "util.h"
 #include "k-means.h"
+#include "mask.h"
 
 #ifndef LOG_LEVEL_CONF_CV
 #define LOG_LEVEL LOG_LEVEL_ERR
@@ -72,7 +73,8 @@ int convert_binary(const char *input_filename, const char *output_filename)
     util_fit((bmp_save(output_filename ? output_filename : BINARY_SCALE_IMAGE_PATH,
 		    *binary_image_bmp) != 0));
 
-    LOG_INFO("'%s' succesfully saved!\n", output_filename ? output_filename : BINARY_SCALE_IMAGE_PATH);
+    LOG_INFO("'%s' succesfully saved!\n",
+	    output_filename ? output_filename : BINARY_SCALE_IMAGE_PATH);
     goto success;
 
 fail:
@@ -163,11 +165,11 @@ int crop_image(const char *input_filename, const char *output_filename, rectangl
 
     util_fit(((image = bmp_load(input_filename)) == NULL));
     util_fit(((cropped_image = crop_bmp_image(*image, rect)) == NULL));
-    util_fit(((bmp_save(output_filename ? output_filename : CROP_TEST_IMAGE_PATH,
+    util_fit(((bmp_save(output_filename ? output_filename : CROP_IMAGE_PATH,
 			*cropped_image)) != 0));
 
     LOG_INFO("'%s' succesfully saved!\n",
-	    output_filename ? output_filename : CROP_TEST_IMAGE_PATH);
+	    output_filename ? output_filename : CROP_IMAGE_PATH);
     goto success;
 
 fail:
@@ -177,6 +179,42 @@ fail:
 success:
     sfree_image(image);
     sfree_image(cropped_image);
+    return ret;
+}
+
+/*------------------------------------------------------------------------------*/
+int cv_apply_mask(const char *input_filename, const char *output_filename,
+	const char *mask_filename)
+{
+    int ret = 0;
+    image_t *image = NULL, *intensity = NULL, *masked_image = NULL;
+    mask_t *mask = NULL;
+
+    LOG_DBG("Trying to apply mask!\n");
+
+    /* Try to get mask first */
+    util_fit(((mask = mask_read_from_file(mask_filename)) == NULL));
+
+    util_fit(((image = bmp_load(input_filename)) == NULL));
+    util_fit(((intensity = convert_bmp_to_intensity(*image)) == NULL));
+    util_fit(((mask_apply(*intensity, *mask)) != 0));
+    util_fit(((masked_image = convert_intensity_to_bmp(*intensity)) == NULL));
+    util_fit(((bmp_save(output_filename ? output_filename : MASK_IMAGE_PATH,
+			*masked_image)) != 0));
+
+    LOG_INFO("'%s' succesfully saved!\n",
+	    output_filename ? output_filename : MASK_IMAGE_PATH);
+    goto success;
+
+fail:
+    LOG_ERR("%s failed!\n\n", __func__);
+    ret = -1;
+
+success:
+    sfree_mask(mask);
+    sfree_image(image);
+    sfree_image(intensity);
+    sfree_image(masked_image);
     return ret;
 }
 
