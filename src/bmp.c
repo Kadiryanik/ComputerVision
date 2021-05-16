@@ -139,7 +139,7 @@ success:
 }
 
 /*------------------------------------------------------------------------------*/
-image_t* convert_bmp_to_intensity(image_t image)
+image_t* bmp_convert_to_intensity(image_t image)
 {
     uint32_t row = 0, column = 0, padded_width = 0, buf_pos = 0, new_pos = 0;
     image_t *new_image = NULL;
@@ -184,7 +184,7 @@ success:
 }
 
 /*------------------------------------------------------------------------------*/
-image_t* convert_intensity_to_bmp(image_t image)
+image_t* bmp_convert_from_intensity(image_t image)
 {
     uint32_t row = 0, column = 0, padded_width = 0, buf_pos = 0, new_pos = 0;
     image_t* new_image = NULL;
@@ -236,7 +236,7 @@ success:
  *  x,height  <- y,width ->
  *     v
  */
-image_t* crop_bmp_image(image_t image, rectangle_t rect)
+image_t* bmp_crop_image(image_t image, rectangle_t rect)
 {
     image_t *cropped_image = NULL;
     int32_t i = 0, j = 0, new_pos_i = 0, new_pos_j = 0;

@@ -122,24 +122,24 @@ int main(int argc, char *argv[])
 #endif
 
     if (option_mask & OPT_TEST_BMP) {
-	util_fit((test_bmp_file(input_image) != 0));
+	util_fit((cv_test_bmp_file(input_image) != 0));
     }
     if (option_mask & OPT_BINARY) {
 	srand(time(NULL));
-	util_fit((convert_binary(input_image, output_image) != 0));
+	util_fit((cv_convert_binary(input_image, output_image) != 0));
     }
     if (option_mask & OPT_GRAYSCALE) {
-	util_fit((convert_grayscale(input_image, output_image) != 0));
+	util_fit((cv_convert_grayscale(input_image, output_image) != 0));
     }
     if (option_mask & OPT_DRAW_TESTS) {
 	plus_t plus = { .x = 60, .y = 60, .len = 40 };
 	rectangle_t rect = { .x = 60, .y = 60, .width = 60, .height = 40 };
 	circle_t circle = { .x = 60, .y = 60, .r = 20 };
 	ellipse_t ellipse = { .x = 60, .y = 60, .a = 30, .b = 60 };
-	util_fit((draw_tests(input_image, output_image, plus, rect, circle, ellipse) != 0));
+	util_fit((cv_draw_tests(input_image, output_image, plus, rect, circle, ellipse) != 0));
     }
     if (option_mask & OPT_CROP_IMAGE) {
-	util_fit((crop_image(input_image, output_image, crop_rect) != 0));
+	util_fit((cv_crop_image(input_image, output_image, crop_rect) != 0));
     }
     if (option_mask & OPT_APPLY_MASK) {
 	util_fit((cv_apply_mask(input_image, output_image, mask_filename) != 0));
