@@ -31,6 +31,7 @@
 #define OPT_DRAW_TESTS	(0x01 << 3)
 #define OPT_CROP_IMAGE	(0x01 << 4)
 #define OPT_APPLY_MASK	(0x01 << 5)
+#define OPT_APPLY_MORP	(0x01 << 6)
 
 /*------------------------------------------------------------------------------*/
 int print_with_func_line = 0;	/* accessed by log.h */
@@ -45,12 +46,13 @@ int safe_strtol(const char * const str, long *result);
 int main(int argc, char *argv[])
 {
     int ret = 0;
-    char c = 0, *input_image = NULL, *output_image = NULL, *mask_filename = NULL;
+    char c = 0, *input_image = NULL, *output_image = NULL, *mask_filename = NULL,
+	 *morp = NULL;
     uint8_t option_mask = 0;
     int8_t parser_index = 0;
     rectangle_t crop_rect = { .x = 0, .y = 0, .width = 0, .height = 0 };
 
-    while ((c = getopt(argc, argv, "i:o:tbgdc:m:vDPh")) != -1) {
+    while ((c = getopt(argc, argv, "i:o:tbgdc:m:M:vDPh")) != -1) {
 	switch(c) {
 	    case 'i':
 		input_image = optarg;
@@ -92,6 +94,10 @@ int main(int argc, char *argv[])
 	    case 'm':
 		option_mask |= OPT_APPLY_MASK;
 		mask_filename = optarg;
+		break;
+	    case 'M':
+		option_mask |= OPT_APPLY_MORP;
+		morp = optarg;
 		break;
 	    case 'v':
 		/* opens all log levels */
@@ -144,6 +150,9 @@ int main(int argc, char *argv[])
     if (option_mask & OPT_APPLY_MASK) {
 	util_fit((cv_apply_mask(input_image, output_image, mask_filename) != 0));
     }
+    if (option_mask & OPT_APPLY_MORP) {
+	cv_apply_morphology(input_image, output_image, morp);
+    }
 
     goto success;
 
@@ -160,7 +169,8 @@ success:
 /*------------------------------------------------------------------------------*/
 void usage(const char *name)
 {
-    fprintf(stderr, "\nUsage: %s [-i <*.bmp>] [-o <*.bmp>] [-c <x> <y> <width> <height>] [-m <file>] [-tbgdvDPh]\n"
+    fprintf(stderr, "\nUsage: %s [-i <*.bmp>] [-o <*.bmp>] [-c <x> <y> <width> <height>] "
+		    "[-m <file>] [-M [dilation|erosion|open|close]] [-tbgdvDPh]\n"
 		    "\t\b\bOptions with no arguments\n"
 		    "\t-t\ttest the input bmp file readability\n"
 		    "\t-b\tconvert input rgb image to binary image\n"
@@ -175,6 +185,7 @@ void usage(const char *name)
 		    "\t-o\toutput image (uses default if not given)\n"
 		    "\t-c\tcropping arguments\n"
 		    "\t-m\tmask file with format=<width height <array-members-in-order>>\n"
+		    "\t-M\tapply morphology\n"
 		    "Example:\n"
 		    "\t%s -gi image.bmp\n"
 		    "\t%s -gi image.bmp -o output.bmp\n"
@@ -182,8 +193,9 @@ void usage(const char *name)
 		    "\t%s -D -t -i image.bmp\n"
 		    "\t%s -vi image.bmp -c 220 210 180 250\n"
 		    "\t%s -vi image.bmp -m mask.txt\n"
+		    "\t%s -vi shape.bmp -M open\n"
 		    "\t%s -vPDbgdi image.bmp\n",
-		    name, name, name, name, name, name, name, name);
+		    name, name, name, name, name, name, name, name, name);
 }
 
 /*------------------------------------------------------------------------------*/

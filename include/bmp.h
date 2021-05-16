@@ -15,6 +15,10 @@
 #include "util.h"
 
 /*------------------------------------------------------------------------------*/
+#define COLOUR_WHITE 255
+#define COLOUR_BLACK 0
+
+/*------------------------------------------------------------------------------*/
 /* TODO: remove attribute packed */
 typedef struct bitmap_file_header {
     uint16_t type;		/* 2: Magic identifier */

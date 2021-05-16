@@ -18,5 +18,6 @@ int cv_convert_grayscale(const char *, const char *);
 int cv_draw_tests(const char *, const char *, plus_t, rectangle_t, circle_t, ellipse_t);
 int cv_crop_image(const char *, const char *, rectangle_t);
 int cv_apply_mask(const char *, const char *, const char *);
+int cv_apply_morphology(const char *, const char *, const char *);
 
 #endif /* COMPUTER_VISION_H_ */

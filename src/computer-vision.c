@@ -14,12 +14,50 @@
 #include "util.h"
 #include "k-means.h"
 #include "mask.h"
+#include "morphology.h"
 
 #ifndef LOG_LEVEL_CONF_CV
 #define LOG_LEVEL LOG_LEVEL_ERR
 #else /* LOG_LEVEL_CONF_CV */
 #define LOG_LEVEL LOG_LEVEL_CONF_CV
 #endif /* LOG_LEVEL_CONF_CV */
+
+/*------------------------------------------------------------------------------*/
+static image_t* _cv_get_binary_image(const char *filename)
+{
+    int threshold = 0;
+    uint32_t i = 0;
+    image_t *image = NULL, *intensity = NULL, *binary_image = NULL;
+
+    LOG_DBG("%s: '%s'!\n", __func__, filename);
+
+    util_fit(((image = bmp_load(filename)) == NULL));
+    util_fit(((intensity = bmp_convert_to_intensity(*image)) == NULL));
+    util_fit(((threshold = kmeans_get_thold(2, *intensity)) < 0));
+
+    /* Allocate image and copy size fields into it.
+     * Ignore the buf pointer we will set it before use */
+    util_fite(((binary_image = (image_t *)calloc(1, sizeof(image_t))) == NULL),
+	    LOG_ERR("BinaryImage allocation failed!\n"));
+    memcpy(binary_image, intensity, sizeof(image_t));
+
+    util_fite(((binary_image->buf = (uint8_t *)malloc(binary_image->size *
+	    sizeof(uint8_t))) == NULL), LOG_ERR("BinaryImage data allocation failed!\n"));
+    for (i = 0; i < binary_image->size; i++) {
+	binary_image->buf[i] = (intensity->buf[i] > threshold) ? COLOUR_WHITE : COLOUR_BLACK;
+    }
+
+    goto success;
+
+fail:
+    LOG_ERR("%s failed!\n", __func__);
+    sfree_image(binary_image);
+
+success:
+    sfree_image(image);
+    sfree_image(intensity);
+    return binary_image;
+}
 
 /*------------------------------------------------------------------------------*/
 int cv_test_bmp_file(const char *filename)
@@ -46,29 +84,12 @@ success:
 /*------------------------------------------------------------------------------*/
 int cv_convert_binary(const char *input_filename, const char *output_filename)
 {
-    int ret = 0, threshold = 0;
-    uint32_t i = 0;
-    image_t *image = NULL, *intensity = NULL, *binary_image = NULL,
-	    *binary_image_bmp = NULL;
+    int ret = 0;
+    image_t *binary_image = NULL, *binary_image_bmp = NULL;
 
-    LOG_DBG("Trying to convert '%s' to binary!\n", input_filename);
+    LOG_DBG("%s: in:'%s' out:'%s'\n", __func__, input_filename, output_filename);
 
-    util_fit(((image = bmp_load(input_filename)) == NULL));
-    util_fit(((intensity = bmp_convert_to_intensity(*image)) == NULL));
-    util_fit(((threshold = kmeans_get_thold(2, *intensity)) < 0));
-
-    /* Allocate image and copy size fields into it.
-     * Ignore the buf pointer we will set before use */
-    util_fite(((binary_image = (image_t *)calloc(1, sizeof(image_t))) == NULL),
-	    LOG_ERR("BinaryImage allocation failed!\n"));
-    memcpy(binary_image, intensity, sizeof(image_t));
-
-    util_fite(((binary_image->buf = (uint8_t *)malloc(binary_image->size *
-	    sizeof(uint8_t))) == NULL), LOG_ERR("BinaryImage data allocation failed!\n"));
-    for (i = 0; i < binary_image->size; i++) {
-	binary_image->buf[i] = (intensity->buf[i] > threshold) ? 255 : 0;
-    }
-
+    util_fit(((binary_image = _cv_get_binary_image(input_filename)) == NULL));
     util_fit(((binary_image_bmp = bmp_convert_from_intensity(*binary_image)) == NULL));
     util_fit((bmp_save(output_filename ? output_filename : BINARY_SCALE_IMAGE_PATH,
 		    *binary_image_bmp) != 0));
@@ -78,12 +99,10 @@ int cv_convert_binary(const char *input_filename, const char *output_filename)
     goto success;
 
 fail:
-    LOG_ERR("%s failed!\n\n", __func__);
+    LOG_ERR("%s failed!\n", __func__);
     ret = -1;
 
 success:
-    sfree_image(image);
-    sfree_image(intensity);
     sfree_image(binary_image);
     sfree_image(binary_image_bmp);
     return ret;
@@ -215,6 +234,37 @@ success:
     sfree_image(image);
     sfree_image(intensity);
     sfree_image(masked_image);
+    return ret;
+}
+
+/*------------------------------------------------------------------------------*/
+int cv_apply_morphology(const char *input_filename, const char *output_filename,
+	const char *morp)
+{
+    int ret = 0;
+    image_t *binary_image = NULL, *binary_image_bmp = NULL;
+
+    LOG_DBG("%s: in:'%s' out:'%s' morp:'%s'\n", __func__, input_filename, output_filename, morp);
+
+    util_fit(((binary_image = _cv_get_binary_image(input_filename)) == NULL));
+
+    util_fit((morp_apply(*binary_image, morp) != 0));
+
+    util_fit(((binary_image_bmp = bmp_convert_from_intensity(*binary_image)) == NULL));
+    util_fit((bmp_save(output_filename ? output_filename : MORP_TESTS_IMAGE_PATH,
+		    *binary_image_bmp) != 0));
+
+    LOG_INFO("'%s' succesfully saved!\n",
+	    output_filename ? output_filename : MORP_TESTS_IMAGE_PATH);
+    goto success;
+
+fail:
+    LOG_ERR("%s failed!\n", __func__);
+    ret = -1;
+
+success:
+    sfree_image(binary_image);
+    sfree_image(binary_image_bmp);
     return ret;
 }
 
