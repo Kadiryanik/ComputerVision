@@ -49,7 +49,7 @@ int plot_histogram(const uint32_t* const histogram)
     goto success;
 
 fail:
-    LOG_ERR("%s failed!\n\n", __func__);
+    LOG_ERR("%s failed!\n", __func__);
     ret = -1;
 
 success:

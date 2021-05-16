@@ -39,8 +39,8 @@ int verbose_output_enabled = 0;	/* accessed by log.h */
 int plot_with_python = 0;	/* accessed by util.c */
 
 /*------------------------------------------------------------------------------*/
-void usage(const char *);
-int safe_strtol(const char * const str, long *result);
+static void _usage(const char *);
+static int _safe_strtol(const char * const str, long *result);
 
 /*------------------------------------------------------------------------------*/
 int main(int argc, char *argv[])
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     int8_t parser_index = 0;
     rectangle_t crop_rect = { .x = 0, .y = 0, .width = 0, .height = 0 };
 
-    while ((c = getopt(argc, argv, "i:o:tbgdc:m:M:vDPh")) != -1) {
+    while ((c = getopt(argc, argv, "i:o:tbgdc:m:M:vVPh")) != -1) {
 	switch(c) {
 	    case 'i':
 		input_image = optarg;
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 		while ((++parser_index < 4) && optind < argc) {
 		    long l = 0;
 
-		    util_fit((safe_strtol(argv[optind], &l) != 0));
+		    util_fit((_safe_strtol(argv[optind], &l) != 0));
 		    util_fite((l < 1),
 			    fprintf(stderr, "-c arguments can not be less than 1\n"));
 		    if (parser_index == 0) crop_rect.x = l;
@@ -103,8 +103,8 @@ int main(int argc, char *argv[])
 		/* opens all log levels */
 		verbose_output_enabled = 1;
 		break;
-	    case 'D':
-		/* adds line number current logs */
+	    case 'V':
+		/* adds function name and line number into current logs */
 		print_with_func_line = 1;
 		break;
 	    case 'P':
@@ -126,6 +126,7 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "Compile by setting the LOG_FEATURE_ENABLED flag for verbose output!\n");
     }
 #endif
+    LOG_DBG("Options parsed successfully\n");
 
     if (option_mask & OPT_TEST_BMP) {
 	util_fit((cv_test_bmp_file(input_image) != 0));
@@ -157,7 +158,7 @@ int main(int argc, char *argv[])
     goto success;
 
 fail_with_usage:
-    usage(argv[0]);
+    _usage(argv[0]);
 
 fail:
     ret = -1;
@@ -167,22 +168,22 @@ success:
 }
 
 /*------------------------------------------------------------------------------*/
-void usage(const char *name)
+static void _usage(const char *name)
 {
     fprintf(stderr, "\nUsage: %s [-i <*.bmp>] [-o <*.bmp>] [-c <x> <y> <width> <height>] "
-		    "[-m <file>] [-M [dilation|erosion|open|close]] [-tbgdvDPh]\n"
+		    "[-m <file>] [-M [dilation|erosion|open|close]] [-tbgdvVPh]\n"
 		    "\t\b\bOptions with no arguments\n"
 		    "\t-t\ttest the input bmp file readability\n"
 		    "\t-b\tconvert input rgb image to binary image\n"
 		    "\t-g\tconvert input rgb image to gray scale image\n"
 		    "\t-d\ttest draw capability with input image\n"
 		    "\t-v\tenable verbose output\n"
-		    "\t-D\tprint with called function name and called line\n"
+		    "\t-V\tadd function name and line into current log level\n"
 		    "\t-P\tplot graphics with python\n"
 		    "\t-h\tprint usage\n"
 		    "\t\b\bOptions with arguments\n"
 		    "\t-i\tinput image\n"
-		    "\t-o\toutput image (uses default if not given)\n"
+		    "\t-o\toutput image (uses default files if not given)\n"
 		    "\t-c\tcropping arguments\n"
 		    "\t-m\tmask file with format=<width height <array-members-in-order>>\n"
 		    "\t-M\tapply morphology\n"
@@ -190,16 +191,16 @@ void usage(const char *name)
 		    "\t%s -gi image.bmp\n"
 		    "\t%s -gi image.bmp -o output.bmp\n"
 		    "\t%s -Pbi image.bmp\n"
-		    "\t%s -D -t -i image.bmp\n"
-		    "\t%s -vi image.bmp -c 220 210 180 250\n"
-		    "\t%s -vi image.bmp -m mask.txt\n"
-		    "\t%s -vi shape.bmp -M open\n"
-		    "\t%s -vPDbgdi image.bmp\n",
+		    "\t%s -vV -t -i image.bmp\n"
+		    "\t%s -i image.bmp -c 220 210 180 250\n"
+		    "\t%s -i image.bmp -m mask.txt\n"
+		    "\t%s -i shape.bmp -M open\n"
+		    "\t%s -vVPbgdi image.bmp\n",
 		    name, name, name, name, name, name, name, name, name);
 }
 
 /*------------------------------------------------------------------------------*/
-int safe_strtol(const char * const str, long *result)
+static int _safe_strtol(const char * const str, long *result)
 {
     int ret = 0;
     char *endptr = NULL;
@@ -219,3 +220,4 @@ fail:
 success:
     return ret;
 }
+

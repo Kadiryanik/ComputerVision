@@ -29,7 +29,7 @@ static image_t* _cv_get_binary_image(const char *filename)
     uint32_t i = 0;
     image_t *image = NULL, *intensity = NULL, *binary_image = NULL;
 
-    LOG_DBG("%s: '%s'!\n", __func__, filename);
+    LOG_DBG("filename:'%s'\n", filename);
 
     util_fit(((image = bmp_load(filename)) == NULL));
     util_fit(((intensity = bmp_convert_to_intensity(*image)) == NULL));
@@ -69,11 +69,11 @@ int cv_test_bmp_file(const char *filename)
 
     util_fit(((image = bmp_load(filename)) == NULL));
 
-    LOG_INFO("File load succeed!\n");
+    LOG_INFO("'%s' loaded successfully!\n", filename);
     goto success;
 
 fail:
-    LOG_ERR("%s failed!\n\n", __func__);
+    LOG_ERR("%s failed!\n", __func__);
     ret = -1;
 
 success:
@@ -87,7 +87,7 @@ int cv_convert_binary(const char *input_filename, const char *output_filename)
     int ret = 0;
     image_t *binary_image = NULL, *binary_image_bmp = NULL;
 
-    LOG_DBG("%s: in:'%s' out:'%s'\n", __func__, input_filename, output_filename);
+    LOG_DBG("input_filename:'%s' output_image:'%s'\n", input_filename, output_filename);
 
     util_fit(((binary_image = _cv_get_binary_image(input_filename)) == NULL));
     util_fit(((binary_image_bmp = bmp_convert_from_intensity(*binary_image)) == NULL));
@@ -114,7 +114,7 @@ int cv_convert_grayscale(const char *input_filename, const char *output_filename
     int ret = 0;
     image_t *image = NULL, *intensity = NULL, *gray_scale_image = NULL;
 
-    LOG_DBG("Trying to convert '%s' to gray scale!\n", input_filename);
+    LOG_DBG("input_filename:'%s' output_image:'%s'\n", input_filename, output_filename);
 
     util_fit(((image = bmp_load(input_filename)) == NULL));
     util_fit(((intensity = bmp_convert_to_intensity(*image)) == NULL));
@@ -127,7 +127,7 @@ int cv_convert_grayscale(const char *input_filename, const char *output_filename
     goto success;
 
 fail:
-    LOG_ERR("%s failed!\n\n", __func__);
+    LOG_ERR("%s failed!\n", __func__);
     ret = -1;
 
 success:
@@ -144,7 +144,7 @@ int cv_draw_tests(const char *input_filename, const char *output_filename,
     int ret = 0;
     image_t *image = NULL, *intensity = NULL, *draw_test_image = NULL;
 
-    LOG_DBG("Trying to draw shapes!\n");
+    LOG_DBG("input_filename:'%s' output_image:'%s' ...\n", input_filename, output_filename);
 
     util_fit(((image = bmp_load(input_filename)) == NULL));
     util_fit(((intensity = bmp_convert_to_intensity(*image)) == NULL));
@@ -163,7 +163,7 @@ int cv_draw_tests(const char *input_filename, const char *output_filename,
     goto success;
 
 fail:
-    LOG_ERR("%s failed!\n\n", __func__);
+    LOG_ERR("%s failed!\n", __func__);
     ret = -1;
 
 success:
@@ -179,8 +179,8 @@ int cv_crop_image(const char *input_filename, const char *output_filename, recta
     int ret = 0;
     image_t *image = NULL, *cropped_image = NULL;
 
-    LOG_DBG("Trying to crop image! [%u,%u,%u,%u]\n",
-	    rect.x, rect.y, rect.width, rect.height);
+    LOG_DBG("input_filename:'%s' output_filename:'%s' rect:[%u,%u,%u,%u]\n",
+	    input_filename, output_filename, rect.x, rect.y, rect.width, rect.height);
 
     util_fit(((image = bmp_load(input_filename)) == NULL));
     util_fit(((cropped_image = bmp_crop_image(*image, rect)) == NULL));
@@ -192,7 +192,7 @@ int cv_crop_image(const char *input_filename, const char *output_filename, recta
     goto success;
 
 fail:
-    LOG_ERR("%s failed!\n\n", __func__);
+    LOG_ERR("%s failed!\n", __func__);
     ret = -1;
 
 success:
@@ -209,7 +209,8 @@ int cv_apply_mask(const char *input_filename, const char *output_filename,
     image_t *image = NULL, *intensity = NULL, *masked_image = NULL;
     mask_t *mask = NULL;
 
-    LOG_DBG("Trying to apply mask!\n");
+    LOG_DBG("input_filename:'%s' output_filename:'%s' mask_filename:'%s'\n",
+	    input_filename, output_filename, mask_filename);
 
     /* Try to get mask first */
     util_fit(((mask = mask_read_from_file(mask_filename)) == NULL));
@@ -226,7 +227,7 @@ int cv_apply_mask(const char *input_filename, const char *output_filename,
     goto success;
 
 fail:
-    LOG_ERR("%s failed!\n\n", __func__);
+    LOG_ERR("%s failed!\n", __func__);
     ret = -1;
 
 success:
@@ -244,7 +245,8 @@ int cv_apply_morphology(const char *input_filename, const char *output_filename,
     int ret = 0;
     image_t *binary_image = NULL, *binary_image_bmp = NULL;
 
-    LOG_DBG("%s: in:'%s' out:'%s' morp:'%s'\n", __func__, input_filename, output_filename, morp);
+    LOG_DBG("input_filename:'%s' output_filename:'%s' morp:'%s'\n",
+	    input_filename, output_filename, morp);
 
     util_fit(((binary_image = _cv_get_binary_image(input_filename)) == NULL));
 

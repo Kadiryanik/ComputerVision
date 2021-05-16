@@ -29,7 +29,7 @@ static int _morp_apply(image_t image, mask_t mask, uint8_t check_value)
     uint8_t *temp_buf = NULL;
     uint32_t i = 0, j = 0, k = 0, l = 0, mask_center_i = 0, mask_center_j = 0;
 
-    LOG_DBG("%s: image:'%p' mask:'%p', check_val:%u\n", __func__, &image, &mask, check_value);
+    LOG_DBG("image:%p mask:%p, check_val:%u\n", &image, &mask, check_value);
 
     util_fite(((temp_buf = (uint8_t *)malloc(image.size * sizeof(uint8_t))) == NULL),
 	    LOG_ERR("Temp buffer allocation failed\n"));
@@ -145,7 +145,7 @@ int morp_apply(image_t image, const char *morp)
 {
     int ret = 0;
 
-    LOG_DBG("%s: image:'%p' morp:'%s'\n", __func__, &image, morp);
+    LOG_DBG("image:%p morp:'%s'\n", &image, morp);
 
     util_fite((morp == NULL), LOG_ERR("Morphology can not be NULL!\n"));
 
@@ -170,3 +170,4 @@ fail:
 success:
     return ret;
 }
+

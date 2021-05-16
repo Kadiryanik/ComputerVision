@@ -31,6 +31,8 @@ image_t* bmp_load(const char *filename)
     bitmap_info_header_t bmp_info_header;
     image_t *image =  NULL;
 
+    LOG_DBG("filename:'%s'\n", filename);
+
     util_fite((filename == NULL), LOG_ERR("filename is NULL!\n"));
     util_fite(((file = fopen(filename, "rb")) == NULL), LOG_ERR("File open failed!\n"));
 
@@ -75,7 +77,7 @@ image_t* bmp_load(const char *filename)
     image->size = buffer_size;
     image->colour_bytes = bmp_info_header.bit_count / 8;
 
-    LOG_DBG("Reading Done!\n");
+    LOG_DBG("'%s' successfully loaded!\n", filename);
     goto success;
 
 fail:
@@ -93,6 +95,8 @@ int bmp_save(const char *filename, image_t image)
     bitmap_file_header_t bmp_file_header;
     bitmap_info_header_t bmp_info_header;
     int ret = 0, size = 0;
+
+    LOG_DBG("filename:'%s' image:%p\n", filename, &image);
 
     util_fite((filename == NULL), LOG_ERR("filename is NULL!\n"));
     util_fite(((file = fopen(filename, "w")) == NULL), LOG_ERR("File open failed!\n"));
@@ -144,6 +148,8 @@ image_t* bmp_convert_to_intensity(image_t image)
     uint32_t row = 0, column = 0, padded_width = 0, buf_pos = 0, new_pos = 0;
     image_t *new_image = NULL;
 
+    LOG_DBG("image:%p\n", &image);
+
     /* make sure the parameters are valid */
     util_fite(((image.buf == NULL) || (image.width == 0) || (image.height == 0)),
 	    LOG_ERR("Parameters are not valid!\n"));
@@ -188,6 +194,8 @@ image_t* bmp_convert_from_intensity(image_t image)
 {
     uint32_t row = 0, column = 0, padded_width = 0, buf_pos = 0, new_pos = 0;
     image_t* new_image = NULL;
+
+    LOG_DBG("image:%p\n", &image);
 
     /* make sure the parameters are valid */
     util_fite(((image.buf == NULL) || (image.width == 0) || (image.height == 0)),
@@ -240,6 +248,8 @@ image_t* bmp_crop_image(image_t image, rectangle_t rect)
 {
     image_t *cropped_image = NULL;
     int32_t i = 0, j = 0, new_pos_i = 0, new_pos_j = 0;
+
+    LOG_DBG("image:%p rect:%p\n", &image, &rect);
 
     if (rect.x >= image.height || rect.y >= image.width || rect.x +
 	    rect.height >= image.height || rect.y + rect.width >= image.width) {

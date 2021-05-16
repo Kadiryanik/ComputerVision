@@ -21,7 +21,7 @@
 #endif /* LOG_LEVEL_CONF_MASK */
 
 /*------------------------------------------------------------------------------*/
-static int get_sum(mask_t mask)
+static int _get_sum(mask_t mask)
 {
     uint32_t i = 0, j = 0;
     uint16_t sum = 0;
@@ -40,6 +40,8 @@ mask_t* mask_read_from_file(const char *filename)
     FILE *file = NULL;
     mask_t *mask = NULL;
     uint32_t i = 0, j = 0;
+
+    LOG_DBG("filename:'%s'\n", filename);
 
     util_fite(((file = fopen(filename, "r")) == NULL), LOG_ERR("File open failed!\n"));
 
@@ -81,6 +83,8 @@ int mask_apply(image_t image, mask_t mask)
     uint32_t i = 0, j = 0, k = 0, l = 0, mask_center_i = 0, mask_center_j = 0;
     uint16_t new_val = 0, mask_divide_by = 0;
 
+    LOG_DBG("image:%p, mask:%p\n", &image, &mask);
+
     util_fite(((temp_buf = (uint8_t *)malloc(image.size * sizeof(uint8_t))) == NULL),
 	    LOG_ERR("Mask temp buffer allocation failed\n"));
     /* duplicate image buffer for holding original values */
@@ -89,7 +93,7 @@ int mask_apply(image_t image, mask_t mask)
     mask_center_i = mask.height / 2;
     mask_center_j = mask.width / 2;
     /* get and make sure it doesnt contain zero */
-    mask_divide_by = get_sum(mask);
+    mask_divide_by = _get_sum(mask);
     mask_divide_by = mask_divide_by ? mask_divide_by : 1;
 
     /* i and j points to the mask center */

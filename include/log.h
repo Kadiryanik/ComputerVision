@@ -33,7 +33,7 @@ extern int verbose_output_enabled;  /* defined in test.c */
 	if (verbose_output_enabled || (level <= (LOG_LEVEL))) {	\
 	    if (with_level_str) {				\
 		if (print_with_func_line) {			\
-		    printf("%s[%s %d]: ", level_str,		\
+		    printf("%s%s[%d]: ", level_str,		\
 			    __FUNCTION__, __LINE__);		\
 		} else {					\
 		    printf("%s", level_str);			\

@@ -36,9 +36,9 @@ static uint8_t cluster_num = 0;
 
 /*------------------------------------------------------------------------------*/
 /*
- * print_clusters
+ * _print_clusters
  */
-static void print_clusters()
+static void _print_clusters()
 {
     uint8_t i = 0;
     for (i = 0; i < cluster_num; i++) {
@@ -54,22 +54,22 @@ static void print_clusters()
 
 /*------------------------------------------------------------------------------*/
 /*
- * initialize_clusters
+ * _initialize_clusters
  */
-static void initialize_clusters()
+static void _initialize_clusters()
 {
     uint8_t i = 0;
     for (i = 0; i < cluster_num; i++) {
 	clusters[i].c_u = rand() % HISTOGRAM_LENGTH;
     }
-    print_clusters();
+    _print_clusters();
 }
 
 /*------------------------------------------------------------------------------*/
 /*
- * reset_clusters
+ * _reset_clusters
  */
-static void reset_clusters()
+static void _reset_clusters()
 {
     uint8_t i = 0;
     for (i = 0; i < cluster_num; i++) {
@@ -81,9 +81,9 @@ static void reset_clusters()
 
 /*------------------------------------------------------------------------------*/
 /*
- * add_point_to_cluster adds point into cluster which has minimum distance.
+ * _add_point_to_cluster adds point into cluster which has minimum distance.
  */
-static void add_point_to_cluster(int index, int histogram_val)
+static void _add_point_to_cluster(int index, int histogram_val)
 {
     uint8_t i = 0, min = 0, min_index = 0;
 
@@ -101,9 +101,9 @@ static void add_point_to_cluster(int index, int histogram_val)
 
 /*------------------------------------------------------------------------------*/
 /*
- * calc_new_centroids calculates new centroids and stores in c_u.
+ * _calc_new_centroids calculates new centroids and stores in c_u.
  */
-static void calc_new_centroids()
+static void _calc_new_centroids()
 {
     uint8_t i = 0;
 
@@ -115,9 +115,9 @@ static void calc_new_centroids()
 
 /*------------------------------------------------------------------------------*/
 /*
- * check_centroids checks clusters are already orginized or not.
+ * _check_centroids checks clusters are already orginized or not.
  */
-static uint8_t check_centroids()
+static uint8_t _check_centroids()
 {
     uint8_t ret = 0, i = 0;
     for (i = 0; i < cluster_num; i++) {
@@ -125,7 +125,7 @@ static uint8_t check_centroids()
     }
 
     /* For debugging move this call into fail case */
-    print_clusters();
+    _print_clusters();
     goto success;
 
 fail:
@@ -154,24 +154,24 @@ int kmeans_get_thold(uint8_t n, image_t image)
     util_fite((plot_histogram(histogram) != 0),
 	    LOG_ERR("Threshold plotting failed!\n"));
 
-    initialize_clusters();
+    _initialize_clusters();
     do {
 	/* loop reset, check function for more detail */
-	reset_clusters();
+	_reset_clusters();
 
 	/* new clustering */
-	for (i = 0; i < HISTOGRAM_LENGTH; i++) add_point_to_cluster(i, histogram[i]);
+	for (i = 0; i < HISTOGRAM_LENGTH; i++) _add_point_to_cluster(i, histogram[i]);
 
 	/* calculate new cluster centroid */
-	calc_new_centroids();
-    } while (check_centroids());
+	_calc_new_centroids();
+    } while (_check_centroids());
 
     ret = (clusters[0].c + clusters[1].c) / 2;
-    LOG_DBG("Threshold = %d\n", ret);
+    LOG_DBG("c1: %u, c2: %u -> threshold = %d\n", clusters[0].c, clusters[1].c, ret);
     goto success;
 
 fail:
-    LOG_ERR("%s failed!\n\n", __func__);
+    LOG_ERR("%s failed!\n", __func__);
     ret = -1;
 
 success:
