@@ -63,38 +63,6 @@ typedef struct {
     } while (0)
 
 /*------------------------------------------------------------------------------*/
-typedef struct {
-    int32_t x;
-    int32_t y;
-    int32_t len;
-} plus_t;
-
-typedef struct {
-    int32_t x;
-    int32_t y;
-    int32_t width;
-    int32_t height;
-} rectangle_t;
-
-typedef struct {
-    int32_t x;
-    int32_t y;
-    int32_t r;
-} circle_t;
-
-typedef struct {
-    int32_t x;
-    int32_t y;
-    int32_t a;
-    int32_t b;
-} ellipse_t;
-
-/*------------------------------------------------------------------------------*/
 int plot_histogram(const uint32_t* const);
-
-void draw_plus(image_t, plus_t);
-void draw_rect(image_t, rectangle_t);
-void draw_circle(image_t, circle_t);
-void draw_ellipse(image_t, ellipse_t);
 
 #endif /* UTIL_H_ */

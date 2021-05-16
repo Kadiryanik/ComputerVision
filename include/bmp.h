@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include "util.h"
+#include "draw.h"
 
 /*------------------------------------------------------------------------------*/
 #define COLOUR_WHITE 255

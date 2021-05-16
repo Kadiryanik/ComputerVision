@@ -17,6 +17,7 @@
 #include "computer-vision.h"
 #include "log.h"
 #include "util.h"
+#include "draw.h"
 
 #ifndef LOG_LEVEL_CONF_TEST
 #define LOG_LEVEL LOG_LEVEL_ERR
@@ -28,7 +29,7 @@
 #define OPT_TEST_BMP	(0x01 << 0)
 #define OPT_BINARY	(0x01 << 1)
 #define OPT_GRAYSCALE	(0x01 << 2)
-#define OPT_DRAW_TESTS	(0x01 << 3)
+#define OPT_DRAW	(0x01 << 3)
 #define OPT_CROP_IMAGE	(0x01 << 4)
 #define OPT_APPLY_MASK	(0x01 << 5)
 #define OPT_APPLY_MORP	(0x01 << 6)
@@ -47,12 +48,12 @@ int main(int argc, char *argv[])
 {
     int ret = 0;
     char c = 0, *input_image = NULL, *output_image = NULL, *mask_filename = NULL,
-	 *morp = NULL;
+	 *morp = NULL, *draw_filename = NULL;
     uint8_t option_mask = 0;
     int8_t parser_index = 0;
     rectangle_t crop_rect = { .x = 0, .y = 0, .width = 0, .height = 0 };
 
-    while ((c = getopt(argc, argv, "i:o:tbgdc:m:M:vVPh")) != -1) {
+    while ((c = getopt(argc, argv, "i:o:tbgd:c:m:M:vVPh")) != -1) {
 	switch(c) {
 	    case 'i':
 		input_image = optarg;
@@ -70,7 +71,8 @@ int main(int argc, char *argv[])
 		option_mask |= OPT_GRAYSCALE;
 		break;
 	    case 'd':
-		option_mask |= OPT_DRAW_TESTS;
+		option_mask |= OPT_DRAW;
+		draw_filename = optarg;
 		break;
 	    case 'c':
 		option_mask |= OPT_CROP_IMAGE;
@@ -138,12 +140,8 @@ int main(int argc, char *argv[])
     if (option_mask & OPT_GRAYSCALE) {
 	util_fit((cv_convert_grayscale(input_image, output_image) != 0));
     }
-    if (option_mask & OPT_DRAW_TESTS) {
-	plus_t plus = { .x = 60, .y = 60, .len = 40 };
-	rectangle_t rect = { .x = 60, .y = 60, .width = 60, .height = 40 };
-	circle_t circle = { .x = 60, .y = 60, .r = 20 };
-	ellipse_t ellipse = { .x = 60, .y = 60, .a = 30, .b = 60 };
-	util_fit((cv_draw_tests(input_image, output_image, plus, rect, circle, ellipse) != 0));
+    if (option_mask & OPT_DRAW) {
+	util_fit((cv_draw(input_image, output_image, draw_filename) != 0));
     }
     if (option_mask & OPT_CROP_IMAGE) {
 	util_fit((cv_crop_image(input_image, output_image, crop_rect) != 0));
@@ -170,13 +168,12 @@ success:
 /*------------------------------------------------------------------------------*/
 static void _usage(const char *name)
 {
-    fprintf(stderr, "\nUsage: %s [-i <*.bmp>] [-o <*.bmp>] [-c <x> <y> <width> <height>] "
-		    "[-m <file>] [-M [dilation|erosion|open|close]] [-tbgdvVPh]\n"
+    fprintf(stderr, "\nUsage: %s [-i <*.bmp>] [-o <*.bmp>] [-d <file>] [-c <x> <y> <width> <height>] "
+		    "[-m <file>] [-M [dilation|erosion|open|close]] [-tbgvVPh]\n"
 		    "\t\b\bOptions with no arguments\n"
 		    "\t-t\ttest the input bmp file readability\n"
 		    "\t-b\tconvert input rgb image to binary image\n"
 		    "\t-g\tconvert input rgb image to gray scale image\n"
-		    "\t-d\ttest draw capability with input image\n"
 		    "\t-v\tenable verbose output\n"
 		    "\t-V\tadd function name and line into current log level\n"
 		    "\t-P\tplot graphics with python\n"
@@ -184,19 +181,25 @@ static void _usage(const char *name)
 		    "\t\b\bOptions with arguments\n"
 		    "\t-i\tinput image\n"
 		    "\t-o\toutput image (uses default files if not given)\n"
+		    "\t-d\tdraw shapes in the given file which contain shapes\n"
+		    "\t\tformat=< <shape-name <shape-details-in-order>>* EOF >\n"
+		    "\t\t  for more details please check examples in the draws folder\n"
 		    "\t-c\tcropping arguments\n"
-		    "\t-m\tmask file with format=<width height <array-members-in-order>>\n"
+		    "\t-m\tapply the mask in the given file which contain the mask\n"
+		    "\t\tformat=<width height <array-members-in-order>>\n"
+		    "\t\t  for more details please check examples in the masks folder\n"
 		    "\t-M\tapply morphology\n"
 		    "Example:\n"
+		    "\t%s -t -i image.bmp\n"
 		    "\t%s -gi image.bmp\n"
-		    "\t%s -gi image.bmp -o output.bmp\n"
+		    "\t%s -vVgi image.bmp -o output.bmp\n"
 		    "\t%s -Pbi image.bmp\n"
-		    "\t%s -vV -t -i image.bmp\n"
+		    "\t%s -i image.bmp -d face.txt\n"
 		    "\t%s -i image.bmp -c 220 210 180 250\n"
 		    "\t%s -i image.bmp -m mask.txt\n"
 		    "\t%s -i shape.bmp -M open\n"
-		    "\t%s -vVPbgdi image.bmp\n",
-		    name, name, name, name, name, name, name, name, name);
+		    "\t%s -vVPbgi image.bmp\n",
+		    name, name, name, name, name, name, name, name, name, name);
 }
 
 /*------------------------------------------------------------------------------*/

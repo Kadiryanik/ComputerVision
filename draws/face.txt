@@ -1,0 +1,7 @@
+plus 450 295 30
+rectangle 300 295 200 190
+circle 327 315 15
+ellipse 273 265 15 30
+ellipse 273 345 15 25
+ellipse 367 295 15 35
+EOF

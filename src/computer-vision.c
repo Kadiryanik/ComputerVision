@@ -138,21 +138,19 @@ success:
 }
 
 /*------------------------------------------------------------------------------*/
-int cv_draw_tests(const char *input_filename, const char *output_filename,
-	plus_t plus, rectangle_t rect, circle_t circle, ellipse_t ellipse)
+int cv_draw(const char *input_filename, const char *output_filename,
+	const char *draw_filename)
 {
     int ret = 0;
     image_t *image = NULL, *intensity = NULL, *draw_test_image = NULL;
 
-    LOG_DBG("input_filename:'%s' output_image:'%s' ...\n", input_filename, output_filename);
+    LOG_DBG("input_filename:'%s' output_image:'%s' draw_filename:'%s'\n",
+	    input_filename, output_filename, draw_filename);
 
     util_fit(((image = bmp_load(input_filename)) == NULL));
     util_fit(((intensity = bmp_convert_to_intensity(*image)) == NULL));
 
-    draw_plus(*intensity, plus);
-    draw_rect(*intensity, rect);
-    draw_circle(*intensity, circle);
-    draw_ellipse(*intensity, ellipse);
+    util_fit((draw_multi_shapes(*intensity, draw_filename) != 0));
 
     util_fit(((draw_test_image = bmp_convert_from_intensity(*intensity)) == NULL));
     util_fit(((bmp_save(output_filename ? output_filename : DRAW_TEST_IMAGE_PATH,
