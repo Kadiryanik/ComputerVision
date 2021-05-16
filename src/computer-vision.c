@@ -118,7 +118,9 @@ int cv_convert_grayscale(const char *input_filename, const char *output_filename
 
     util_fit(((image = bmp_load(input_filename)) == NULL));
     util_fit(((intensity = bmp_convert_to_intensity(*image)) == NULL));
+
     util_fit(((gray_scale_image = bmp_convert_from_intensity(*intensity)) == NULL));
+
     util_fit(((bmp_save(output_filename ? output_filename : GRAY_SCALE_IMAGE_PATH,
 			*gray_scale_image)) != 0));
 
@@ -142,19 +144,19 @@ int cv_draw(const char *input_filename, const char *output_filename,
 	const char *draw_filename)
 {
     int ret = 0;
-    image_t *image = NULL, *intensity = NULL, *draw_test_image = NULL;
+    image_t *image = NULL, *rgb_image = NULL, *drawed_image = NULL;
 
     LOG_DBG("input_filename:'%s' output_image:'%s' draw_filename:'%s'\n",
 	    input_filename, output_filename, draw_filename);
 
     util_fit(((image = bmp_load(input_filename)) == NULL));
-    util_fit(((intensity = bmp_convert_to_intensity(*image)) == NULL));
+    util_fit(((rgb_image = bmp_convert_to_rgb(*image)) == NULL));
 
-    util_fit((draw_multi_shapes(*intensity, draw_filename) != 0));
+    util_fit((draw_multi_shapes(*rgb_image, draw_filename) != 0));
 
-    util_fit(((draw_test_image = bmp_convert_from_intensity(*intensity)) == NULL));
+    util_fit(((drawed_image = bmp_convert_from_rgb(*rgb_image)) == NULL));
     util_fit(((bmp_save(output_filename ? output_filename : DRAW_TEST_IMAGE_PATH,
-			*draw_test_image)) != 0));
+			*drawed_image)) != 0));
 
     LOG_INFO("'%s' succesfully saved!\n",
 	    output_filename ? output_filename : DRAW_TEST_IMAGE_PATH);
@@ -166,8 +168,8 @@ fail:
 
 success:
     sfree_image(image);
-    sfree_image(intensity);
-    sfree_image(draw_test_image);
+    sfree_image(rgb_image);
+    sfree_image(drawed_image);
     return ret;
 }
 
@@ -175,15 +177,20 @@ success:
 int cv_crop_image(const char *input_filename, const char *output_filename, rectangle_t rect)
 {
     int ret = 0;
-    image_t *image = NULL, *cropped_image = NULL;
+    image_t *image = NULL, *rgb_image = NULL, *cropped_image = NULL,
+	    *cropped_image_bmp = NULL;
 
     LOG_DBG("input_filename:'%s' output_filename:'%s' rect:[%u,%u,%u,%u]\n",
 	    input_filename, output_filename, rect.x, rect.y, rect.width, rect.height);
 
     util_fit(((image = bmp_load(input_filename)) == NULL));
-    util_fit(((cropped_image = bmp_crop_image(*image, rect)) == NULL));
+    util_fit(((rgb_image = bmp_convert_to_rgb(*image)) == NULL));
+
+    util_fit(((cropped_image = bmp_crop_image(*rgb_image, rect)) == NULL));
+
+    util_fit(((cropped_image_bmp = bmp_convert_from_rgb(*cropped_image)) == NULL));
     util_fit(((bmp_save(output_filename ? output_filename : CROP_IMAGE_PATH,
-			*cropped_image)) != 0));
+			*cropped_image_bmp)) != 0));
 
     LOG_INFO("'%s' succesfully saved!\n",
 	    output_filename ? output_filename : CROP_IMAGE_PATH);
@@ -195,7 +202,9 @@ fail:
 
 success:
     sfree_image(image);
+    sfree_image(rgb_image);
     sfree_image(cropped_image);
+    sfree_image(cropped_image_bmp);
     return ret;
 }
 
@@ -212,10 +221,11 @@ int cv_apply_mask(const char *input_filename, const char *output_filename,
 
     /* Try to get mask first */
     util_fit(((mask = mask_read_from_file(mask_filename)) == NULL));
-
     util_fit(((image = bmp_load(input_filename)) == NULL));
     util_fit(((intensity = bmp_convert_to_intensity(*image)) == NULL));
+
     util_fit(((mask_apply(*intensity, *mask)) != 0));
+
     util_fit(((masked_image = bmp_convert_from_intensity(*intensity)) == NULL));
     util_fit(((bmp_save(output_filename ? output_filename : MASK_IMAGE_PATH,
 			*masked_image)) != 0));

@@ -48,11 +48,11 @@
 
 /*------------------------------------------------------------------------------*/
 typedef struct {
-    uint8_t *buf;
-    uint8_t colour_bytes;
-    uint32_t width;
-    uint32_t height;
-    uint32_t size;
+    uint8_t *buf;	/* pixels */
+    uint8_t cb;		/* colour bytes */
+    uint32_t width;	/* image width */
+    uint32_t height;	/* image height */
+    uint32_t size;	/* size for allocation */
 } image_t;
 
 #define sfree_image(_image) do {    \

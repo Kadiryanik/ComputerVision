@@ -13,6 +13,7 @@
 
 #include "log.h"
 #include "util.h"
+#include "bmp.h"
 #include "draw.h"
 
 #ifndef LOG_LEVEL_CONF_DRAW
@@ -26,6 +27,17 @@
 #define SHAPE_NAME_LEN 16
 #define SHAPE_NAME_SF "%15s" /* SF: Scanf Format */
 
+#define DRAW_RGB_COLOUR		(uint8_t []){ 0, 255, 255 } /* R: 0, G: 255, B: 255 */
+#define DRAW_GRAYSCLE_COLOUR	COLOUR_WHITE
+#define GET_COLOUR(n, k)	((n > 1) ? DRAW_RGB_COLOUR[k] : DRAW_GRAYSCLE_COLOUR)
+
+#define draw_set_pixels(_ptr) do {				\
+	ptr = _ptr;						\
+	for (k = 0; k < image.cb; k++) {		\
+	    *(ptr + k) = GET_COLOUR(image.cb, k);	\
+	}							\
+    } while (0)
+
 /*------------------------------------------------------------------------------*/
 /*    |	    ^
  *  --o--   x	<- y ->
@@ -33,7 +45,8 @@
  */
 void draw_plus(image_t image, plus_t plus)
 {
-    int32_t i = 0;
+    int32_t i = 0, k = 0;
+    uint8_t *ptr = NULL;
 
     LOG_DBG("plus %d %d %d\n", plus.x, plus.y, plus.len);
 
@@ -41,10 +54,12 @@ void draw_plus(image_t image, plus_t plus)
 	int32_t _x = plus.x + i;
 	int32_t _y = plus.y + i;
 	if (_x >= 0 && _x < image.height && plus.y >= 0 && plus.y < image.width) {
-	    *(image.buf + (image.width * _x) + plus.y) = 0xff;
+	    draw_set_pixels(image.buf + (image.width * image.cb * _x) +
+		    plus.y * image.cb);
 	}
 	if (_y >= 0 && _y < image.width && plus.x >= 0 && plus.x < image.height) {
-	    *(image.buf + (image.width * plus.x) + _y) = 0xff;
+	    draw_set_pixels(image.buf + (image.width * image.cb * plus.x) +
+		   _y * image.cb);
 	}
     }
 }
@@ -58,7 +73,8 @@ void draw_plus(image_t image, plus_t plus)
  */
 void draw_rect(image_t image, rectangle_t rect)
 {
-    int32_t i = 0, _x = 0, _y = 0;
+    int32_t i = 0, k = 0, _x = 0, _y = 0;
+    uint8_t *ptr = NULL;
 
     LOG_DBG("rectangle %d %d %d %d\n", rect.x, rect.y, rect.width, rect.height);
     /* A to B and D to C */
@@ -69,13 +85,15 @@ void draw_rect(image_t image, rectangle_t rect)
 	    /* A to B */
 	    _y = rect.y - (rect.width / 2);
 	    if (_y >= 0) {
-		*(image.buf + (image.width * _x) + _y) = 0xff;
+		draw_set_pixels(image.buf + (image.width * image.cb * _x) +
+			_y * image.cb);
 	    }
 
 	    /* D to C */
 	    _y = rect.y + (rect.width / 2);
 	    if (_y < image.width) {
-		*(image.buf + (image.width * _x) + _y) = 0xff;
+		draw_set_pixels(image.buf + (image.width * image.cb * _x) +
+			_y * image.cb);
 	    }
 	}
     }
@@ -87,13 +105,15 @@ void draw_rect(image_t image, rectangle_t rect)
 	    /* A to D */
 	    _x = rect.x - (rect.height / 2);
 	    if (_x >= 0) {
-		*(image.buf + (image.width * _x) + _y) = 0xff;
+		draw_set_pixels(image.buf + (image.width * image.cb * _x) +
+			_y * image.cb);
 	    }
 
 	    /* B to C */
 	    _x = rect.x + (rect.height / 2);
 	    if (_x < image.height) {
-		*(image.buf + (image.width * _x) + _y) = 0xff;
+		draw_set_pixels(image.buf + (image.width * image.cb * _x) +
+			_y * image.cb);
 	    }
 	}
     }
@@ -110,7 +130,8 @@ void draw_rect(image_t image, rectangle_t rect)
  */
 void draw_circle(image_t image, circle_t circle)
 {
-    int32_t i = 0, _x = 0, _y = 0;
+    int32_t i = 0, k = 0, _x = 0, _y = 0;
+    uint8_t *ptr = NULL;
 
     LOG_DBG("circle %d %d %d\n", circle.x, circle.y, circle.r);
 
@@ -119,12 +140,12 @@ void draw_circle(image_t image, circle_t circle)
 	_y = circle.r * sin((PI * i) / 180) + circle.y;
 
 	if(_x >= 0 && _x < image.height && _y >= 0 && _y < image.width){
-	    *(image.buf + (image.width * _x) + _y) = 0xff;
+	    draw_set_pixels(image.buf + (image.width * image.cb * _x) + _y * image.cb);
 	}
     }
 }
 
-/*--------------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------------*/
 /*      ===
  *     / | \
  *   -- a|  --
@@ -137,7 +158,8 @@ void draw_circle(image_t image, circle_t circle)
  */
 void draw_ellipse(image_t image, ellipse_t ellipse)
 {
-    int32_t i = 0, _x = 0, _y = 0;
+    int32_t i = 0, k = 0, _x = 0, _y = 0;
+    uint8_t *ptr = NULL;
 
     LOG_DBG("ellipse %d %d %d %d\n", ellipse.x, ellipse.y, ellipse.a, ellipse.b);
 
@@ -145,8 +167,8 @@ void draw_ellipse(image_t image, ellipse_t ellipse)
 	_x = ellipse.x + ellipse.a * cos((PI * i) / 180);
 	_y = ellipse.y + ellipse.b * sin((PI * i) / 180);
 
-	if(_x >= 0 && _x < image.height && _y >= 0 && _y < image.width){
-	    *(image.buf + (image.width * _x) + _y) = 0xff;
+	if (_x >= 0 && _x < image.height && _y >= 0 && _y < image.width) {
+	    draw_set_pixels(image.buf + (image.width * image.cb * _x) + _y * image.cb);
 	}
     }
 }

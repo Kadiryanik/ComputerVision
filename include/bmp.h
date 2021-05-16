@@ -49,5 +49,7 @@ int bmp_save(const char *, image_t);
 image_t* bmp_convert_to_intensity(image_t);
 image_t* bmp_convert_from_intensity(image_t);
 image_t* bmp_crop_image(image_t, rectangle_t);
+image_t* bmp_convert_to_rgb(image_t);
+image_t* bmp_convert_from_rgb(image_t);
 
 #endif /* BMP_H_ */
