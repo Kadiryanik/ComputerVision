@@ -12,5 +12,6 @@
 #define CROP_IMAGE_PATH		    "images/cropped.bmp"
 #define MASK_IMAGE_PATH		    "images/mask.bmp"
 #define MORP_TESTS_IMAGE_PATH	    "images/morphology.bmp"
+#define REGIONS_IMAGE_PATH	    "images/regions.bmp"
 
 #endif /* PROJECT_CONF_H_ */

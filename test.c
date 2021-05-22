@@ -26,13 +26,14 @@
 #endif /* LOG_LEVEL_CONF_TEST */
 
 /*------------------------------------------------------------------------------*/
-#define OPT_TEST_BMP	(0x01 << 0)
-#define OPT_BINARY	(0x01 << 1)
-#define OPT_GRAYSCALE	(0x01 << 2)
-#define OPT_DRAW	(0x01 << 3)
-#define OPT_CROP_IMAGE	(0x01 << 4)
-#define OPT_APPLY_MASK	(0x01 << 5)
-#define OPT_APPLY_MORP	(0x01 << 6)
+#define OPT_TEST_BMP		(0x01 << 0)
+#define OPT_BINARY		(0x01 << 1)
+#define OPT_GRAYSCALE		(0x01 << 2)
+#define OPT_DRAW		(0x01 << 3)
+#define OPT_CROP_IMAGE		(0x01 << 4)
+#define OPT_APPLY_MASK		(0x01 << 5)
+#define OPT_APPLY_MORP		(0x01 << 6)
+#define OPT_IDENTIFY_REGION	(0x01 << 7)
 
 /*------------------------------------------------------------------------------*/
 int print_with_func_line = 0;	/* accessed by log.h */
@@ -53,7 +54,7 @@ int main(int argc, char *argv[])
     int8_t parser_index = 0;
     rectangle_t crop_rect = { .x = 0, .y = 0, .width = 0, .height = 0 };
 
-    while ((c = getopt(argc, argv, "i:o:tbgd:c:m:M:vVPh")) != -1) {
+    while ((c = getopt(argc, argv, "i:o:tbgRd:c:m:M:vVPh")) != -1) {
 	switch(c) {
 	    case 'i':
 		input_image = optarg;
@@ -69,6 +70,9 @@ int main(int argc, char *argv[])
 		break;
 	    case 'g':
 		option_mask |= OPT_GRAYSCALE;
+		break;
+	    case 'R':
+		option_mask |= OPT_IDENTIFY_REGION;
 		break;
 	    case 'd':
 		option_mask |= OPT_DRAW;
@@ -150,7 +154,10 @@ int main(int argc, char *argv[])
 	util_fit((cv_apply_mask(input_image, output_image, mask_filename) != 0));
     }
     if (option_mask & OPT_APPLY_MORP) {
-	cv_apply_morphology(input_image, output_image, morp);
+	util_fit((cv_apply_morphology(input_image, output_image, morp) != 0));
+    }
+    if (option_mask & OPT_IDENTIFY_REGION) {
+	util_fit((cv_identify_regions(input_image, output_image) != 0));
     }
 
     goto success;
@@ -169,11 +176,12 @@ success:
 static void _usage(const char *name)
 {
     fprintf(stderr, "\nUsage: %s [-i <*.bmp>] [-o <*.bmp>] [-d <file>] [-c <x> <y> <width> <height>] "
-		    "[-m <file>] [-M [dilation|erosion|open|close]] [-tbgvVPh]\n"
+		    "[-m <file>] [-M [dilation|erosion|open|close]] [-tbgRvVPh]\n"
 		    "\t\b\bOptions with no arguments\n"
 		    "\t-t\ttest the input bmp file readability\n"
-		    "\t-b\tconvert input rgb image to binary image\n"
-		    "\t-g\tconvert input rgb image to gray scale image\n"
+		    "\t-b\tconvert input image to binary image\n"
+		    "\t-g\tconvert input image to gray scale image\n"
+		    "\t-R\tconvert input image to gray scale image where regions identified with color\n"
 		    "\t-v\tenable verbose output\n"
 		    "\t-V\tadd function name and line into current log level\n"
 		    "\t-P\tplot graphics with python\n"
@@ -198,7 +206,7 @@ static void _usage(const char *name)
 		    "\t%s -i image.bmp -c 220 210 180 250\n"
 		    "\t%s -i image.bmp -m mask.txt\n"
 		    "\t%s -i shape.bmp -M open\n"
-		    "\t%s -vVPbgi image.bmp\n",
+		    "\t%s -vVPbgRi image.bmp\n",
 		    name, name, name, name, name, name, name, name, name, name);
 }
 

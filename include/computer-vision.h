@@ -19,5 +19,6 @@ int cv_draw(const char *, const char *, const char *);
 int cv_crop_image(const char *, const char *, rectangle_t);
 int cv_apply_mask(const char *, const char *, const char *);
 int cv_apply_morphology(const char *, const char *, const char *);
+int cv_identify_regions(const char *, const char *);
 
 #endif /* COMPUTER_VISION_H_ */

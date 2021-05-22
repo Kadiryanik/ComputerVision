@@ -31,11 +31,11 @@
 #define DRAW_GRAYSCLE_COLOUR	COLOUR_WHITE
 #define GET_COLOUR(n, k)	((n > 1) ? DRAW_RGB_COLOUR[k] : DRAW_GRAYSCLE_COLOUR)
 
-#define draw_set_pixels(_ptr) do {				\
-	ptr = _ptr;						\
+#define draw_set_pixels(_ptr) do {			\
+	ptr = _ptr;					\
 	for (k = 0; k < image.cb; k++) {		\
 	    *(ptr + k) = GET_COLOUR(image.cb, k);	\
-	}							\
+	}						\
     } while (0)
 
 /*------------------------------------------------------------------------------*/

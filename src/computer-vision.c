@@ -278,3 +278,38 @@ success:
     return ret;
 }
 
+/*------------------------------------------------------------------------------*/
+int cv_identify_regions(const char *input_filename, const char *output_filename)
+{
+    int ret = 0;
+    image_t *binary_image = NULL, *binary_image_bmp = NULL, *regions_image = NULL;
+
+    LOG_DBG("input_filename:'%s' output_filename:'%s'\n",
+	    input_filename, output_filename);
+
+    util_fit(((binary_image = _cv_get_binary_image(input_filename)) == NULL));
+
+    /* First apply open to eliminate noise */
+    util_fit((morp_apply(*binary_image, "open") != 0));
+    util_fit(((regions_image = morp_identify_regions(*binary_image)) == NULL));
+
+    util_fit(((binary_image_bmp = bmp_convert_from_intensity(*regions_image)) == NULL));
+
+    util_fit((bmp_save(output_filename ? output_filename : REGIONS_IMAGE_PATH,
+		    *binary_image_bmp) != 0));
+
+    LOG_INFO("'%s' succesfully saved!\n",
+	    output_filename ? output_filename : REGIONS_IMAGE_PATH);
+    goto success;
+
+fail:
+    LOG_ERR("%s failed!\n", __func__);
+    ret = -1;
+
+success:
+    sfree_image(binary_image);
+    sfree_image(binary_image_bmp);
+    sfree_image(regions_image);
+    return ret;
+}
+
