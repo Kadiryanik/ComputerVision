@@ -185,12 +185,13 @@ success:
 /*------------------------------------------------------------------------------*/
 /* TODO: make label calculation on int16_t buffer for bigger contents.
  * Reset the label ids after fixing overlapping for balanced colors */
-image_t* morp_identify_regions(image_t image)
+image_t* morp_identify_regions(image_t image, regions_t *regions)
 {
     uint32_t i = 0, j = 0, t = 0, orig_pos = 0, nbr_pos = 0;
     int8_t k = 0, l = 0;
-    uint8_t total_label = REGION_BACKGROUND, nbr_label = 0,
-	    nbr_min_label = 0, nbr_max_label = 0;
+    uint8_t total_label = REGION_BACKGROUND, nbr_label = 0, nbr_min_label = 0,
+	    nbr_max_label = 0, region_offset = 0, found = 0;
+
     image_t *new_image = NULL;
 
     LOG_DBG("image:%p\n", &image);
@@ -203,6 +204,7 @@ image_t* morp_identify_regions(image_t image)
 			sizeof(uint8_t))) == NULL), LOG_ERR("Image data allocation failed\n"));
     new_image->width = image.width;
     new_image->height = image.height;
+    new_image->cb = 1;
 
     for (i = 0; i < image.width * image.height; i++) {
 	new_image->buf[i] = image.buf[i] ? REGION_BACKGROUND : REGION_DATA;
@@ -270,18 +272,72 @@ image_t* morp_identify_regions(image_t image)
 	    }
 	}
     }
+    total_label = total_label - REGION_BACKGROUND;
+
+    regions->noe = total_label;
+    util_fite(((regions->region = (region_t *)calloc(regions->noe, sizeof(region_t))) == NULL),
+	    LOG_ERR("Regions->region allocation failed\n"));
+
+    for (i = 0; i < image.height; i++) {
+	for (j = 0; j < image.width; j++) {
+	    orig_pos = i * image.width + j;
+	    if (new_image->buf[orig_pos] == REGION_BACKGROUND) continue;
+
+	    /* Check current regions labels, if not exist set new */
+	    found = 0;
+	    for (k = 0; k < region_offset; k++) {
+		if (new_image->buf[orig_pos] == regions->region[k].old_label) {
+		    found = 1;
+		    /* update region */
+		    if (i < regions->region[k].rect.x) regions->region[k].rect.x = i;
+		    if (j < regions->region[k].rect.y) regions->region[k].rect.y = j;
+		    if (i > regions->region[k].rect.height) regions->region[k].rect.height = i;
+		    if (j > regions->region[k].rect.width) regions->region[k].rect.width = j;
+		    break;
+		}
+	    }
+	    if (found) continue;
+
+	    util_fite((region_offset >= regions->noe),
+		    LOG_ERR("FATAL: label count and image mismatch! (%u)\n", region_offset));
+
+	    /* initialize region */
+	    regions->region[region_offset].old_label = new_image->buf[orig_pos];
+	    regions->region[region_offset].label = region_offset;
+	    regions->region[region_offset].rect.x = i;
+	    regions->region[region_offset].rect.y = j;
+	    regions->region[region_offset].rect.height = 0;
+	    regions->region[region_offset].rect.width = 0;
+
+	    LOG_DBG("region[%d]=%u->%u\n", region_offset, regions->region[region_offset].old_label,
+		    regions->region[region_offset].label);
+	    region_offset++;
+	}
+    }
+    util_fite((region_offset != regions->noe),
+	    LOG_ERR("FATAL: region_offset and noe mismatch!\n"));
 
     /* Final pass: set the different grayscale color for each regions */
-    LOG_DBG("Total label = %u\n", total_label - REGION_BACKGROUND);
+    LOG_DBG("Total label = %u\n", total_label);
     for (i = 0; i < image.width * image.height; i++) {
 	if (new_image->buf[i] == REGION_BACKGROUND) {
 	    new_image->buf[i] = COLOUR_WHITE;
 	} else {
-	    new_image->buf[i] = (new_image->buf[i] - REGION_BACKGROUND) *
-		(240 / (total_label - REGION_BACKGROUND));
+	    /* Use new label for coloring */
+	    for (j = 0; j < regions->noe; j++) {
+		if (new_image->buf[i] == regions->region[j].old_label) {
+		    new_image->buf[i] = regions->region[j].label * (240 / (total_label));
+		    break;
+		}
+	    }
 	}
     }
 
+    /* width and height holds pixels which is end of the rectangle, set correct values */
+    for (i = 0; i < regions->noe; i++) {
+	regions->region[i].rect.height -= regions->region[i].rect.x;
+	regions->region[i].rect.width -= regions->region[i].rect.y;
+    }
     goto success;
 
 fail:

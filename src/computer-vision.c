@@ -283,6 +283,7 @@ int cv_identify_regions(const char *input_filename, const char *output_filename)
 {
     int ret = 0;
     image_t *binary_image = NULL, *binary_image_bmp = NULL, *regions_image = NULL;
+    regions_t regions = { .noe = 0, .region = NULL };
 
     LOG_DBG("input_filename:'%s' output_filename:'%s'\n",
 	    input_filename, output_filename);
@@ -291,7 +292,7 @@ int cv_identify_regions(const char *input_filename, const char *output_filename)
 
     /* First apply open to eliminate noise */
     util_fit((morp_apply(*binary_image, "open") != 0));
-    util_fit(((regions_image = morp_identify_regions(*binary_image)) == NULL));
+    util_fit(((regions_image = morp_identify_regions(*binary_image, &regions)) == NULL));
 
     util_fit(((binary_image_bmp = bmp_convert_from_intensity(*regions_image)) == NULL));
 
@@ -310,6 +311,7 @@ success:
     sfree_image(binary_image);
     sfree_image(binary_image_bmp);
     sfree_image(regions_image);
+    sfree(regions.region);
     return ret;
 }
 
