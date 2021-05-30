@@ -5,6 +5,8 @@
 
 #define LOG_LEVEL_CONF_CV	LOG_LEVEL_INFO
 
+#define NBR_CONF_HFL		4 /* Check nbr_hfl in morphology.c for more detail */
+
 /*------------------------------------------------------------------------------*/
 #define BINARY_SCALE_IMAGE_PATH	    "images/binary.bmp"
 #define GRAY_SCALE_IMAGE_PATH	    "images/grayscale.bmp"

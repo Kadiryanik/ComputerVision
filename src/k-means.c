@@ -138,6 +138,9 @@ success:
 /*------------------------------------------------------------------------------*/
 /* TODO: seperate this function for (n != 2) cases.
  * kmeans_get_thold return threshold value for converting image into binary.
+ *
+ * Calculate more than once and make the decision based on the number of results
+ * that are close to each other.
  */
 int kmeans_get_thold(uint8_t n, image_t image)
 {

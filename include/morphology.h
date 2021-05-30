@@ -31,6 +31,7 @@ int morp_apply_erosion(image_t);
 int morp_apply_open(image_t);
 int morp_apply_close(image_t);
 int morp_apply(image_t, const char *);
+void morp_colorize_regions(image_t, uint8_t);
 image_t* morp_identify_regions(image_t, regions_t *);
 
 #endif /* MORPHOLOGY_H_ */

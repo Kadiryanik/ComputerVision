@@ -16,8 +16,11 @@
 #include "draw.h"
 
 /*------------------------------------------------------------------------------*/
-#define COLOUR_WHITE 255
-#define COLOUR_BLACK 0
+#define COLOR_WHITE 255
+#define COLOR_BLACK 0
+
+#define COLOR_BG COLOR_WHITE
+#define COLOR_FG COLOR_BLACK
 
 /*------------------------------------------------------------------------------*/
 /* TODO: remove attribute packed */

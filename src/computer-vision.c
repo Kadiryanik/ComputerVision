@@ -15,6 +15,7 @@
 #include "k-means.h"
 #include "mask.h"
 #include "morphology.h"
+#include "feature-extraction.h"
 
 #ifndef LOG_LEVEL_CONF_CV
 #define LOG_LEVEL LOG_LEVEL_ERR
@@ -44,7 +45,7 @@ static image_t* _cv_get_binary_image(const char *filename)
     util_fite(((binary_image->buf = (uint8_t *)malloc(binary_image->size *
 	    sizeof(uint8_t))) == NULL), LOG_ERR("BinaryImage data allocation failed!\n"));
     for (i = 0; i < binary_image->size; i++) {
-	binary_image->buf[i] = (intensity->buf[i] > threshold) ? COLOUR_WHITE : COLOUR_BLACK;
+	binary_image->buf[i] = (intensity->buf[i] > threshold) ? COLOR_BG : COLOR_FG;
     }
 
     goto success;
@@ -57,6 +58,31 @@ success:
     sfree_image(image);
     sfree_image(intensity);
     return binary_image;
+}
+
+/*------------------------------------------------------------------------------*/
+static image_t* _cv_get_regions(const char *input_filename, regions_t *regions)
+{
+    image_t *binary_image = NULL, *regions_image = NULL;
+
+    LOG_DBG("input_filename:'%s' regions:%p\n",
+	    input_filename, regions);
+
+    util_fit(((binary_image = _cv_get_binary_image(input_filename)) == NULL));
+
+    /* First apply open to eliminate noise */
+    util_fit((morp_apply(*binary_image, "open") != 0));
+    util_fit(((regions_image = morp_identify_regions(*binary_image, regions)) == NULL));
+
+    goto success;
+
+fail:
+    LOG_ERR("%s failed!\n", __func__);
+    sfree_image(regions_image);
+
+success:
+    sfree_image(binary_image);
+    return regions_image;
 }
 
 /*------------------------------------------------------------------------------*/
@@ -282,22 +308,20 @@ success:
 int cv_identify_regions(const char *input_filename, const char *output_filename)
 {
     int ret = 0;
-    image_t *binary_image = NULL, *binary_image_bmp = NULL, *regions_image = NULL;
+    image_t *regions_image_bmp = NULL, *regions_image = NULL;
     regions_t regions = { .noe = 0, .region = NULL };
 
     LOG_DBG("input_filename:'%s' output_filename:'%s'\n",
 	    input_filename, output_filename);
 
-    util_fit(((binary_image = _cv_get_binary_image(input_filename)) == NULL));
+    util_fit(((regions_image = _cv_get_regions(input_filename, &regions)) == NULL));
+    /* scale colors */
+    morp_colorize_regions(*regions_image, regions.noe);
 
-    /* First apply open to eliminate noise */
-    util_fit((morp_apply(*binary_image, "open") != 0));
-    util_fit(((regions_image = morp_identify_regions(*binary_image, &regions)) == NULL));
-
-    util_fit(((binary_image_bmp = bmp_convert_from_intensity(*regions_image)) == NULL));
+    util_fit(((regions_image_bmp = bmp_convert_from_intensity(*regions_image)) == NULL));
 
     util_fit((bmp_save(output_filename ? output_filename : REGIONS_IMAGE_PATH,
-		    *binary_image_bmp) != 0));
+		    *regions_image_bmp) != 0));
 
     LOG_INFO("'%s' succesfully saved!\n",
 	    output_filename ? output_filename : REGIONS_IMAGE_PATH);
@@ -308,10 +332,38 @@ fail:
     ret = -1;
 
 success:
-    sfree_image(binary_image);
-    sfree_image(binary_image_bmp);
+    sfree_image(regions_image_bmp);
     sfree_image(regions_image);
     sfree(regions.region);
+    return ret;
+}
+
+/*------------------------------------------------------------------------------*/
+int cv_feature_extraction_avg(const char *input_filename, const char *output_filename)
+{
+    int ret = 0;
+    image_t *regions_image = NULL;
+    regions_t regions = { .noe = 0, .region = NULL };
+    features_t *features_avg = NULL;
+
+    LOG_DBG("input_filename:'%s' output_filename:'%s'\n",
+	    input_filename, output_filename);
+
+    util_fit(((regions_image = _cv_get_regions(input_filename, &regions)) == NULL));
+    util_fit(((features_avg = fe_get_avg(*regions_image, regions)) == NULL));
+    util_fit((fe_save(output_filename, *features_avg) != 0));
+
+    LOG_INFO("'%s' succesfully saved!\n", output_filename);
+    goto success;
+
+fail:
+    LOG_ERR("%s failed!\n", __func__);
+    ret = -1;
+
+success:
+    sfree_image(regions_image);
+    sfree(regions.region);
+    sfree_features(features_avg);
     return ret;
 }
 

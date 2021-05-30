@@ -27,14 +27,14 @@
 #define SHAPE_NAME_LEN 16
 #define SHAPE_NAME_SF "%15s" /* SF: Scanf Format */
 
-#define DRAW_RGB_COLOUR		(uint8_t []){ 0, 255, 255 } /* R: 0, G: 255, B: 255 */
-#define DRAW_GRAYSCLE_COLOUR	COLOUR_WHITE
-#define GET_COLOUR(n, k)	((n > 1) ? DRAW_RGB_COLOUR[k] : DRAW_GRAYSCLE_COLOUR)
+#define DRAW_RGB_COLOR		(uint8_t []){ 0, 255, 255 } /* R: 0, G: 255, B: 255 */
+#define DRAW_GRAYSCALE_COLOR	COLOR_BLACK
+#define GET_COLOR(n, k)	((n > 1) ? DRAW_RGB_COLOR[k] : DRAW_GRAYSCALE_COLOR)
 
 #define draw_set_pixels(_ptr) do {			\
 	ptr = _ptr;					\
 	for (k = 0; k < image.cb; k++) {		\
-	    *(ptr + k) = GET_COLOUR(image.cb, k);	\
+	    *(ptr + k) = GET_COLOR(image.cb, k);	\
 	}						\
     } while (0)
 

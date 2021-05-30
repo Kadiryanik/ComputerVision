@@ -34,11 +34,13 @@
 #define OPT_APPLY_MASK		(0x01 << 5)
 #define OPT_APPLY_MORP		(0x01 << 6)
 #define OPT_IDENTIFY_REGION	(0x01 << 7)
+#define OPT_FEATURE_EXT		(0x01 << 8)
 
 /*------------------------------------------------------------------------------*/
 int print_with_func_line = 0;	/* accessed by log.h */
 int verbose_output_enabled = 0;	/* accessed by log.h */
 int plot_with_python = 0;	/* accessed by util.c */
+long nbr_hfl = NBR_CONF_HFL;	/* accessed by morphology.c */
 
 /*------------------------------------------------------------------------------*/
 static void _usage(const char *);
@@ -48,19 +50,19 @@ static int _safe_strtol(const char * const str, long *result);
 int main(int argc, char *argv[])
 {
     int ret = 0;
-    char c = 0, *input_image = NULL, *output_image = NULL, *mask_filename = NULL,
-	 *morp = NULL, *draw_filename = NULL;
-    uint8_t option_mask = 0;
+    char c = 0, *input_file = NULL, *output_file = NULL, *mask_filename = NULL,
+	 *morp = NULL, *draw_filename = NULL, *fe_type = NULL;
+    uint16_t option_mask = 0;
     int8_t parser_index = 0;
     rectangle_t crop_rect = { .x = 0, .y = 0, .width = 0, .height = 0 };
 
-    while ((c = getopt(argc, argv, "i:o:tbgRd:c:m:M:vVPh")) != -1) {
+    while ((c = getopt(argc, argv, "i:o:tbgRd:c:m:M:f:N:vVPh")) != -1) {
 	switch(c) {
 	    case 'i':
-		input_image = optarg;
+		input_file = optarg;
 		break;
 	    case 'o':
-		output_image = optarg;
+		output_file = optarg;
 		break;
 	    case 't':
 		option_mask |= OPT_TEST_BMP;
@@ -105,6 +107,16 @@ int main(int argc, char *argv[])
 		option_mask |= OPT_APPLY_MORP;
 		morp = optarg;
 		break;
+	    case 'f':
+		option_mask |= OPT_FEATURE_EXT;
+		fe_type = optarg;
+		break;
+	    case 'N':
+		option_mask |= OPT_FEATURE_EXT;
+		util_fit((_safe_strtol(optarg, &nbr_hfl) != 0));
+		util_fite((nbr_hfl < 1 || nbr_hfl > 0x7f),
+			fprintf(stderr, "-N arguments failed, please select in [1,127]\n"));
+		break;
 	    case 'v':
 		/* opens all log levels */
 		verbose_output_enabled = 1;
@@ -123,7 +135,7 @@ int main(int argc, char *argv[])
 	}
     }
 
-    if ((input_image == NULL) || (option_mask == 0)) {
+    if ((input_file == NULL) || (option_mask == 0)) {
 	goto fail_with_usage;
     }
 
@@ -134,30 +146,40 @@ int main(int argc, char *argv[])
 #endif
     LOG_DBG("Options parsed successfully\n");
 
+    srand(time(NULL));
+
     if (option_mask & OPT_TEST_BMP) {
-	util_fit((cv_test_bmp_file(input_image) != 0));
+	util_fit((cv_test_bmp_file(input_file) != 0));
     }
     if (option_mask & OPT_BINARY) {
-	srand(time(NULL));
-	util_fit((cv_convert_binary(input_image, output_image) != 0));
+	util_fit((cv_convert_binary(input_file, output_file) != 0));
     }
     if (option_mask & OPT_GRAYSCALE) {
-	util_fit((cv_convert_grayscale(input_image, output_image) != 0));
+	util_fit((cv_convert_grayscale(input_file, output_file) != 0));
     }
     if (option_mask & OPT_DRAW) {
-	util_fit((cv_draw(input_image, output_image, draw_filename) != 0));
+	util_fit((cv_draw(input_file, output_file, draw_filename) != 0));
     }
     if (option_mask & OPT_CROP_IMAGE) {
-	util_fit((cv_crop_image(input_image, output_image, crop_rect) != 0));
+	util_fit((cv_crop_image(input_file, output_file, crop_rect) != 0));
     }
     if (option_mask & OPT_APPLY_MASK) {
-	util_fit((cv_apply_mask(input_image, output_image, mask_filename) != 0));
+	util_fit((cv_apply_mask(input_file, output_file, mask_filename) != 0));
     }
     if (option_mask & OPT_APPLY_MORP) {
-	util_fit((cv_apply_morphology(input_image, output_image, morp) != 0));
+	util_fit((cv_apply_morphology(input_file, output_file, morp) != 0));
     }
     if (option_mask & OPT_IDENTIFY_REGION) {
-	util_fit((cv_identify_regions(input_image, output_image) != 0));
+	util_fit((cv_identify_regions(input_file, output_file) != 0));
+    }
+    if (option_mask & OPT_FEATURE_EXT) {
+	util_fite((output_file == NULL), LOG_ERR("-f requires option -o too!\n"));
+	if (strcmp(fe_type, "avg") == 0) {
+	    util_fit((cv_feature_extraction_avg(input_file, output_file) != 0));
+	} else {
+	    LOG_ERR("Unsupperted sub option for -f\n");
+	    goto fail_with_usage;
+	}
     }
 
     goto success;
@@ -175,8 +197,8 @@ success:
 /*------------------------------------------------------------------------------*/
 static void _usage(const char *name)
 {
-    fprintf(stderr, "\nUsage: %s [-i <*.bmp>] [-o <*.bmp>] [-d <file>] [-c <x> <y> <width> <height>] "
-		    "[-m <file>] [-M [dilation|erosion|open|close]] [-tbgRvVPh]\n"
+    fprintf(stderr, "\nUsage: %s [-i <file>] [-o <file>] [-d <file>] [-c <x> <y> <width> <height>] "
+		    "[-m <file>] [-M [dilation|erosion|open|close]] [-N <n>] [-f [print|avg]] [-tbgRvVPh]\n"
 		    "\t\b\bOptions with no arguments\n"
 		    "\t-t\ttest the input bmp file readability\n"
 		    "\t-b\tconvert input image to binary image\n"
@@ -187,8 +209,8 @@ static void _usage(const char *name)
 		    "\t-P\tplot graphics with python\n"
 		    "\t-h\tprint usage\n"
 		    "\t\b\bOptions with arguments\n"
-		    "\t-i\tinput image\n"
-		    "\t-o\toutput image (uses default files if not given)\n"
+		    "\t-i\tinput file\n"
+		    "\t-o\toutput file (uses default files if not given)\n"
 		    "\t-d\tdraw shapes in the given file which contain shapes\n"
 		    "\t\tformat=< <shape-name <shape-details-in-order>>* EOF >\n"
 		    "\t\t  for more details please check examples in the draws folder\n"
@@ -197,6 +219,11 @@ static void _usage(const char *name)
 		    "\t\tformat=<width height <array-members-in-order>>\n"
 		    "\t\t  for more details please check examples in the masks folder\n"
 		    "\t-M\tapply morphology\n"
+		    "\t-N\tset neighbor (half) frame length while selecting regions\n"
+		    "\t\tincreasing this will increase performance\n"
+		    "\t\t  if the regions are too close to each other in image, you need to decrease\n"
+		    "\t-f\tfeature extraction\n"
+		    "\t\t  avg  : calculate features for regions and write file calculated average\n"
 		    "Example:\n"
 		    "\t%s -t -i image.bmp\n"
 		    "\t%s -gi image.bmp\n"
@@ -206,8 +233,11 @@ static void _usage(const char *name)
 		    "\t%s -i image.bmp -c 220 210 180 250\n"
 		    "\t%s -i image.bmp -m mask.txt\n"
 		    "\t%s -i shape.bmp -M open\n"
-		    "\t%s -vVPbgRi image.bmp\n",
-		    name, name, name, name, name, name, name, name, name, name);
+		    "\t%s -N 4 -Ri shape.bmp\n"
+		    "\t%s -f print -i shape.bmp\n"
+		    "\t%s -vVPbgi image.bmp\n",
+		    name, name, name, name, name, name, name, name, name, name,
+		    name, name);
 }
 
 /*------------------------------------------------------------------------------*/

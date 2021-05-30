@@ -24,9 +24,9 @@
 
 /*------------------------------------------------------------------------------*/
 /* HFL	    : Half Frame Len
- * Example  : HFL=5 -> Checks 10x10 frame for neighbors
+ * Example  : HFL=4 -> Checks 8x8 frame for neighbors
  * Note	    : If this is too small then X. pass count will increase */
-#define NBR_HFL 5
+extern long nbr_hfl;
 
 enum region_states {
     REGION_DATA = 0,
@@ -80,11 +80,11 @@ success:
 int morp_apply_dilation(image_t image)
 {
     int ret = 0;
-    mask_t mask = { .buf = (int16_t []){ COLOUR_BLACK, COLOUR_BLACK, COLOUR_BLACK,
-	COLOUR_BLACK, COLOUR_BLACK, COLOUR_BLACK, COLOUR_BLACK, COLOUR_BLACK,
-	COLOUR_BLACK }, .width = 3, .height = 3 };
+    mask_t mask = { .buf = (int16_t []){ COLOR_FG, COLOR_FG, COLOR_FG,
+	COLOR_FG, COLOR_FG, COLOR_FG, COLOR_FG, COLOR_FG,
+	COLOR_FG }, .width = 3, .height = 3 };
 
-    util_fit((_morp_apply(image, mask, COLOUR_WHITE) != 0));
+    util_fit((_morp_apply(image, mask, COLOR_BG) != 0));
 
     goto success;
 
@@ -100,11 +100,11 @@ success:
 int morp_apply_erosion(image_t image)
 {
     int ret = 0;
-    mask_t mask = { .buf = (int16_t []){ COLOUR_WHITE, COLOUR_WHITE, COLOUR_WHITE,
-	COLOUR_WHITE, COLOUR_WHITE, COLOUR_WHITE, COLOUR_WHITE, COLOUR_WHITE,
-	COLOUR_WHITE }, .width = 3, .height = 3 };
+    mask_t mask = { .buf = (int16_t []){ COLOR_BG, COLOR_BG, COLOR_BG,
+	COLOR_BG, COLOR_BG, COLOR_BG, COLOR_BG, COLOR_BG,
+	COLOR_BG }, .width = 3, .height = 3 };
 
-    util_fit((_morp_apply(image, mask, COLOUR_BLACK) != 0));
+    util_fit((_morp_apply(image, mask, COLOR_FG) != 0));
 
     goto success;
 
@@ -183,14 +183,24 @@ success:
 }
 
 /*------------------------------------------------------------------------------*/
-/* TODO: make label calculation on int16_t buffer for bigger contents.
- * Reset the label ids after fixing overlapping for balanced colors */
+void morp_colorize_regions(image_t image, uint8_t region_noe)
+{
+    uint32_t i = 0;
+    for (i = 0; i < image.width * image.height; i++) {
+	/* image buf contain labels which starts 0 to n, scale with multiplying */
+	image.buf[i] *= (240 / region_noe);
+    }
+}
+
+/*------------------------------------------------------------------------------*/
 image_t* morp_identify_regions(image_t image, regions_t *regions)
 {
     uint32_t i = 0, j = 0, t = 0, orig_pos = 0, nbr_pos = 0;
     int8_t k = 0, l = 0;
-    uint8_t total_label = REGION_BACKGROUND, nbr_label = 0, nbr_min_label = 0,
-	    nbr_max_label = 0, region_offset = 0, found = 0;
+    int16_t *buf = NULL; /* labelling buffer */
+    int16_t total_label = REGION_BACKGROUND, nbr_label = 0, nbr_min_label = 0,
+	    nbr_max_label = 0;
+    uint8_t region_offset = 0, found = 0;
 
     image_t *new_image = NULL;
 
@@ -206,23 +216,26 @@ image_t* morp_identify_regions(image_t image, regions_t *regions)
     new_image->height = image.height;
     new_image->cb = 1;
 
+    util_fite(((buf = (int16_t *)malloc((new_image->size) * sizeof(int16_t))) == NULL),
+	    LOG_ERR("Labelling buffer allocation failed\n"));
+
     for (i = 0; i < image.width * image.height; i++) {
-	new_image->buf[i] = image.buf[i] ? REGION_BACKGROUND : REGION_DATA;
+	buf[i] = image.buf[i] ? REGION_BACKGROUND : REGION_DATA;
     }
 
     /* First pass: Set the labels with checking neighbors.
      * Pass the border pixels for eliminate extra checking */
-    for (i = NBR_HFL; i < image.height - NBR_HFL; i++) {
-        for (j = NBR_HFL; j < image.width - NBR_HFL; j++) {
+    for (i = nbr_hfl; i < image.height - nbr_hfl; i++) {
+        for (j = nbr_hfl; j < image.width - nbr_hfl; j++) {
 	    orig_pos = i * image.width + j;
-	    if (new_image->buf[orig_pos] != REGION_DATA) continue;
+	    if (buf[orig_pos] != REGION_DATA) continue;
 
 	    nbr_label = 0;
-	    for (k = -NBR_HFL; k <= NBR_HFL; k++) {
-		for (l = -NBR_HFL; l <= NBR_HFL; l++) {
+	    for (k = -nbr_hfl; k <= nbr_hfl; k++) {
+		for (l = -nbr_hfl; l <= nbr_hfl; l++) {
 		    nbr_pos = (i + k) * image.width + j + l;
-		    if (new_image->buf[nbr_pos] > REGION_BACKGROUND) {
-			nbr_label = new_image->buf[nbr_pos];
+		    if (buf[nbr_pos] > REGION_BACKGROUND) {
+			nbr_label = buf[nbr_pos];
 			break;
 		    }
 		}
@@ -230,30 +243,30 @@ image_t* morp_identify_regions(image_t image, regions_t *regions)
 	    if (nbr_label == 0) {
 		nbr_label = ++total_label;
 	    }
-	    new_image->buf[orig_pos] = nbr_label;
+	    buf[orig_pos] = nbr_label;
 	}
     }
 
     /* Second pass: Check it out if there are different labels in the neighbor frame.
      * Pass the border pixels for eliminate extra checking */
-    for (i = NBR_HFL; i < image.height - NBR_HFL; i++) {
-        for (j = NBR_HFL; j < image.width - NBR_HFL; j++) {
+    for (i = nbr_hfl; i < image.height - nbr_hfl; i++) {
+        for (j = nbr_hfl; j < image.width - nbr_hfl; j++) {
 	    orig_pos = i * image.width + j;
-	    if (new_image->buf[orig_pos] == REGION_BACKGROUND) continue;
+	    if (buf[orig_pos] == REGION_BACKGROUND) continue;
 
-	    nbr_min_label = new_image->buf[orig_pos];
-	    nbr_max_label = new_image->buf[orig_pos];
-	    for (k = -NBR_HFL; k <= NBR_HFL; k++) {
-		for (l = -NBR_HFL; l <= NBR_HFL; l++) {
+	    nbr_min_label = buf[orig_pos];
+	    nbr_max_label = buf[orig_pos];
+	    for (k = -nbr_hfl; k <= nbr_hfl; k++) {
+		for (l = -nbr_hfl; l <= nbr_hfl; l++) {
 		    nbr_pos = (i + k) * image.width + j + l;
-		    if (new_image->buf[nbr_pos] == REGION_BACKGROUND) continue;
+		    if (buf[nbr_pos] == REGION_BACKGROUND) continue;
 
-		    nbr_label = new_image->buf[nbr_pos];
-		    if (new_image->buf[nbr_pos] > nbr_max_label) {
-			nbr_max_label = new_image->buf[nbr_pos];
+		    nbr_label = buf[nbr_pos];
+		    if (buf[nbr_pos] > nbr_max_label) {
+			nbr_max_label = buf[nbr_pos];
 		    }
-		    if(new_image->buf[nbr_pos] < nbr_min_label) {
-			nbr_min_label = new_image->buf[nbr_pos];
+		    if(buf[nbr_pos] < nbr_min_label) {
+			nbr_min_label = buf[nbr_pos];
 		    }
 		}
 	    }
@@ -262,8 +275,8 @@ image_t* morp_identify_regions(image_t image, regions_t *regions)
 			nbr_min_label, nbr_max_label, i, j);
 		/* X. pass: Fix overlapping labels in the whole picture. */
 		for (t = 0; t < image.height * image.width; t++) {
-		    if (new_image->buf[t] == nbr_max_label) {
-			new_image->buf[t] = nbr_min_label;
+		    if (buf[t] == nbr_max_label) {
+			buf[t] = nbr_min_label;
 		    }
 		}
 
@@ -274,6 +287,8 @@ image_t* morp_identify_regions(image_t image, regions_t *regions)
     }
     total_label = total_label - REGION_BACKGROUND;
 
+    util_fite((total_label == 0), LOG_ERR("There is no label\n"));
+
     regions->noe = total_label;
     util_fite(((regions->region = (region_t *)calloc(regions->noe, sizeof(region_t))) == NULL),
 	    LOG_ERR("Regions->region allocation failed\n"));
@@ -281,12 +296,12 @@ image_t* morp_identify_regions(image_t image, regions_t *regions)
     for (i = 0; i < image.height; i++) {
 	for (j = 0; j < image.width; j++) {
 	    orig_pos = i * image.width + j;
-	    if (new_image->buf[orig_pos] == REGION_BACKGROUND) continue;
+	    if (buf[orig_pos] == REGION_BACKGROUND) continue;
 
 	    /* Check current regions labels, if not exist set new */
 	    found = 0;
 	    for (k = 0; k < region_offset; k++) {
-		if (new_image->buf[orig_pos] == regions->region[k].old_label) {
+		if (buf[orig_pos] == regions->region[k].old_label) {
 		    found = 1;
 		    /* update region */
 		    if (i < regions->region[k].rect.x) regions->region[k].rect.x = i;
@@ -302,7 +317,7 @@ image_t* morp_identify_regions(image_t image, regions_t *regions)
 		    LOG_ERR("FATAL: label count and image mismatch! (%u)\n", region_offset));
 
 	    /* initialize region */
-	    regions->region[region_offset].old_label = new_image->buf[orig_pos];
+	    regions->region[region_offset].old_label = buf[orig_pos];
 	    regions->region[region_offset].label = region_offset;
 	    regions->region[region_offset].rect.x = i;
 	    regions->region[region_offset].rect.y = j;
@@ -320,13 +335,13 @@ image_t* morp_identify_regions(image_t image, regions_t *regions)
     /* Final pass: set the different grayscale color for each regions */
     LOG_DBG("Total label = %u\n", total_label);
     for (i = 0; i < image.width * image.height; i++) {
-	if (new_image->buf[i] == REGION_BACKGROUND) {
-	    new_image->buf[i] = COLOUR_WHITE;
+	if (buf[i] == REGION_BACKGROUND) {
+	    new_image->buf[i] = COLOR_BG;
 	} else {
 	    /* Use new label for coloring */
 	    for (j = 0; j < regions->noe; j++) {
-		if (new_image->buf[i] == regions->region[j].old_label) {
-		    new_image->buf[i] = regions->region[j].label * (240 / (total_label));
+		if (buf[i] == regions->region[j].old_label) {
+		    new_image->buf[i] = regions->region[j].label;
 		    break;
 		}
 	    }
@@ -344,6 +359,7 @@ fail:
     sfree_image(new_image);
 
 success:
+    sfree(buf);
     return new_image;
 }
 
