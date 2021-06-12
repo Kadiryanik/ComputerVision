@@ -37,10 +37,11 @@
 #define OPT_FEATURE_EXT		(0x01 << 8)
 
 /*------------------------------------------------------------------------------*/
-int print_with_func_line = 0;	/* accessed by log.h */
-int verbose_output_enabled = 0;	/* accessed by log.h */
-int plot_with_python = 0;	/* accessed by util.c */
-long nbr_hfl = NBR_CONF_HFL;	/* accessed by morphology.c */
+int print_with_func_line = 0;		    /* accessed by log.h */
+int verbose_output_enabled = 0;		    /* accessed by log.h */
+int plot_with_python = 0;		    /* accessed by util.c */
+double fe_match_epsilon = FE_MATCH_EPSILON; /* accessed by feature-extraction.c */
+uint8_t nbr_hfl = NBR_CONF_HFL;		    /* accessed by morphology.c */
 
 /*------------------------------------------------------------------------------*/
 static void _usage(const char *);
@@ -50,13 +51,13 @@ static int _safe_strtol(const char * const str, long *result);
 int main(int argc, char *argv[])
 {
     int ret = 0;
-    char c = 0, *input_file = NULL, *output_file = NULL, *mask_filename = NULL,
-	 *morp = NULL, *draw_filename = NULL, *fe_type = NULL;
+    char c = 0, *input_file = NULL, *test_image_file = NULL, *output_file = NULL,
+	 *mask_filename = NULL, *morp = NULL, *draw_filename = NULL, *fe_type = NULL;
     uint16_t option_mask = 0;
     int8_t parser_index = 0;
     rectangle_t crop_rect = { .x = 0, .y = 0, .width = 0, .height = 0 };
 
-    while ((c = getopt(argc, argv, "i:o:tbgRd:c:m:M:f:N:vVPh")) != -1) {
+    while ((c = getopt(argc, argv, "i:o:tbgRd:c:m:M:f:T:e:N:vVPh")) != -1) {
 	switch(c) {
 	    case 'i':
 		input_file = optarg;
@@ -111,11 +112,21 @@ int main(int argc, char *argv[])
 		option_mask |= OPT_FEATURE_EXT;
 		fe_type = optarg;
 		break;
+	    case 'T':
+		test_image_file = optarg;
+		break;
+	    case 'e':
+		fe_match_epsilon = strtod(optarg, NULL);
+		util_fite((fe_match_epsilon <= 0),
+			fprintf(stderr, "-e option MUST greater than zero\n"));
+		break;
 	    case 'N':
 		option_mask |= OPT_FEATURE_EXT;
-		util_fit((_safe_strtol(optarg, &nbr_hfl) != 0));
-		util_fite((nbr_hfl < 1 || nbr_hfl > 0x7f),
+		long l = 0;
+		util_fit((_safe_strtol(optarg, &l) != 0));
+		util_fite((l < 1 || l > 0x7f),
 			fprintf(stderr, "-N arguments failed, please select in [1,127]\n"));
+		nbr_hfl = l;
 		break;
 	    case 'v':
 		/* opens all log levels */
@@ -173,13 +184,8 @@ int main(int argc, char *argv[])
 	util_fit((cv_identify_regions(input_file, output_file) != 0));
     }
     if (option_mask & OPT_FEATURE_EXT) {
-	util_fite((output_file == NULL), LOG_ERR("-f requires option -o too!\n"));
-	if (strcmp(fe_type, "avg") == 0) {
-	    util_fit((cv_feature_extraction_avg(input_file, output_file) != 0));
-	} else {
-	    LOG_ERR("Unsupperted sub option for -f\n");
-	    goto fail_with_usage;
-	}
+	util_fit((cv_feature_extraction(fe_type, input_file,
+			test_image_file, output_file) != 0));
     }
 
     goto success;
@@ -198,7 +204,8 @@ success:
 static void _usage(const char *name)
 {
     fprintf(stderr, "\nUsage: %s [-i <file>] [-o <file>] [-d <file>] [-c <x> <y> <width> <height>] "
-		    "[-m <file>] [-M [dilation|erosion|open|close]] [-N <n>] [-f [print|avg]] [-tbgRvVPh]\n"
+		    "[-m <file>] [-M [dilation|erosion|open|close]] [-N <n>] [-f [avg|learn]] "
+		    "[-T <file>] [-tbgRvVPh]\n"
 		    "\t\b\bOptions with no arguments\n"
 		    "\t-t\ttest the input bmp file readability\n"
 		    "\t-b\tconvert input image to binary image\n"
@@ -223,7 +230,16 @@ static void _usage(const char *name)
 		    "\t\tincreasing this will increase performance\n"
 		    "\t\t  if the regions are too close to each other in image, you need to decrease\n"
 		    "\t-f\tfeature extraction\n"
-		    "\t\t  avg  : calculate features for regions and write file calculated average\n"
+		    "\t\t  avg   : gets image as input file and calculate features for regions and writes calculated\n"
+		    "\t\t          average to the output file\n"
+		    "\t\t  learn : gets 'class & image-path' formatted input file and writes the calculated averages\n"
+		    "\t\t          for classes to the output file. Check db folder for more example\n"
+		    "\t\t  test  : gets 'class & features' formatted input file and test-image file with -T option.\n"
+		    "\t\t          Tries to classification image content with given classes db. Marks objects with\n"
+		    "\t\t          nearest class and save as image to the output file. You can use output file of 'learn'\n"
+		    "\t\t          option as input of this option.\n"
+		    "\t-T\ttest input image file, meanful with only '-f test' option\n"
+		    "\t-e\tmatching epsilon value, meanful with only '-f test' option\n"
 		    "Example:\n"
 		    "\t%s -t -i image.bmp\n"
 		    "\t%s -gi image.bmp\n"
@@ -234,10 +250,12 @@ static void _usage(const char *name)
 		    "\t%s -i image.bmp -m mask.txt\n"
 		    "\t%s -i shape.bmp -M open\n"
 		    "\t%s -N 4 -Ri shape.bmp\n"
-		    "\t%s -f print -i shape.bmp\n"
+		    "\t%s -f avg -i shape.bmp -o result.txt\n"
+		    "\t%s -f learn -i class-image-db.txt\n"
+		    "\t%s -f test -i features-db.txt -T mixed.bmp\n"
 		    "\t%s -vVPbgi image.bmp\n",
 		    name, name, name, name, name, name, name, name, name, name,
-		    name, name);
+		    name, name, name, name);
 }
 
 /*------------------------------------------------------------------------------*/

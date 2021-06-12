@@ -27,14 +27,30 @@
 #define SHAPE_NAME_LEN 16
 #define SHAPE_NAME_SF "%15s" /* SF: Scanf Format */
 
-#define DRAW_RGB_COLOR		(uint8_t []){ 0, 255, 255 } /* R: 0, G: 255, B: 255 */
-#define DRAW_GRAYSCALE_COLOR	COLOR_BLACK
-#define GET_COLOR(n, k)	((n > 1) ? DRAW_RGB_COLOR[k] : DRAW_GRAYSCALE_COLOR)
+/* In R-G-B format. Increase if you need.
+ * Generated over https://mokole.com/palette.html */
+static uint8_t pre_defined_colors[][3] = {
+	{ 0x64, 0x95, 0xed }, /* cornflower */
+	{ 0x00, 0xff, 0x00 }, /* lime */
+	{ 0xff, 0x45, 0x00 }, /* orangered */
+	{ 0xff, 0xd7, 0x00 }, /* gold */
+	{ 0xff, 0x00, 0xff }, /* fuchsia */
+	{ 0xff, 0xda, 0xb9 }, /* peachpuff */
+	{ 0x00, 0x00, 0x8b }, /* darkblue */
+	{ 0x00, 0x64, 0x00 }, /* darkgreen */
+	{ 0xb0, 0x30, 0x60 }, /* maroon3 */
+	{ 0x00, 0xff, 0xff }, /* aqua */
+    };
 
-#define draw_set_pixels(_ptr) do {			\
+#define PREDEFINED_COLORS_SIZE	(sizeof(pre_defined_colors) / sizeof(pre_defined_colors[0]))
+#define DRAW_GRAYSCALE_COLOR	COLOR_BLACK
+#define GET_COLOR(n, c, k)	((n > 1) ? pre_defined_colors[c][k] : DRAW_GRAYSCALE_COLOR)
+
+#define draw_set_pixels(_ptr, c) do {			\
 	ptr = _ptr;					\
 	for (k = 0; k < image.cb; k++) {		\
-	    *(ptr + k) = GET_COLOR(image.cb, k);	\
+	    *(ptr + k) = GET_COLOR(image.cb,		\
+		    (c % PREDEFINED_COLORS_SIZE), k);	\
 	}						\
     } while (0)
 
@@ -43,7 +59,7 @@
  *  --o--   x	<- y ->
  *    |	    v
  */
-void draw_plus(image_t image, plus_t plus)
+void draw_plus(image_t image, plus_t plus, uint8_t color)
 {
     int32_t i = 0, k = 0;
     uint8_t *ptr = NULL;
@@ -55,11 +71,11 @@ void draw_plus(image_t image, plus_t plus)
 	int32_t _y = plus.y + i;
 	if (_x >= 0 && _x < image.height && plus.y >= 0 && plus.y < image.width) {
 	    draw_set_pixels(image.buf + (image.width * image.cb * _x) +
-		    plus.y * image.cb);
+		    plus.y * image.cb, color);
 	}
 	if (_y >= 0 && _y < image.width && plus.x >= 0 && plus.x < image.height) {
 	    draw_set_pixels(image.buf + (image.width * image.cb * plus.x) +
-		   _y * image.cb);
+		   _y * image.cb, color);
 	}
     }
 }
@@ -71,11 +87,17 @@ void draw_plus(image_t image, plus_t plus)
  * | w/2          | v
  * B--------------C
  */
-void draw_rect(image_t image, rectangle_t rect)
+void draw_rect(image_t image, rectangle_t rect, uint8_t orig_center, uint8_t color)
 {
     int32_t i = 0, k = 0, _x = 0, _y = 0;
     uint8_t *ptr = NULL;
 
+    if (!orig_center) {
+	rect.x += (rect.height / 2) + 2;
+	rect.y += (rect.width / 2) + 2;
+	rect.height += 2;
+	rect.width += 2;
+    }
     LOG_DBG("rectangle %d %d %d %d\n", rect.x, rect.y, rect.width, rect.height);
     /* A to B and D to C */
     for (i = -rect.height / 2; i <= rect.height / 2; i++) {
@@ -86,14 +108,14 @@ void draw_rect(image_t image, rectangle_t rect)
 	    _y = rect.y - (rect.width / 2);
 	    if (_y >= 0) {
 		draw_set_pixels(image.buf + (image.width * image.cb * _x) +
-			_y * image.cb);
+			_y * image.cb, color);
 	    }
 
 	    /* D to C */
 	    _y = rect.y + (rect.width / 2);
 	    if (_y < image.width) {
 		draw_set_pixels(image.buf + (image.width * image.cb * _x) +
-			_y * image.cb);
+			_y * image.cb, color);
 	    }
 	}
     }
@@ -106,14 +128,45 @@ void draw_rect(image_t image, rectangle_t rect)
 	    _x = rect.x - (rect.height / 2);
 	    if (_x >= 0) {
 		draw_set_pixels(image.buf + (image.width * image.cb * _x) +
-			_y * image.cb);
+			_y * image.cb, color);
 	    }
 
 	    /* B to C */
 	    _x = rect.x + (rect.height / 2);
 	    if (_x < image.height) {
 		draw_set_pixels(image.buf + (image.width * image.cb * _x) +
-			_y * image.cb);
+			_y * image.cb, color);
+	    }
+	}
+    }
+}
+
+/*------------------------------------------------------------------------------*/
+/* A--------------D
+ * |      | h/2   | ^
+ * |------o       | x	<- y ->
+ * | w/2          | v
+ * B--------------C
+ */
+void draw_filled_rect(image_t image, rectangle_t rect, uint8_t orig_center, uint8_t color)
+{
+    int32_t i = 0, j = 0, k = 0, _x = 0, _y = 0;
+    uint8_t *ptr = NULL;
+
+    if (!orig_center) {
+	rect.x += (rect.height / 2) + 2;
+	rect.y += (rect.width / 2) + 2;
+    }
+    LOG_DBG("rectangle %d %d %d %d\n", rect.x, rect.y, rect.width, rect.height);
+    for (i = -rect.height / 2; i <= rect.height / 2; i++) {
+	_x = rect.x + i;
+	if (_x >= 0 && _x < image.height) {
+	    for (j = -rect.width / 2; j <= rect.width / 2; j++) {
+		_y = rect.y + j;
+		if (_y >= 0 && _y < image.width) {
+		    draw_set_pixels(image.buf + (image.width * image.cb * _x) +
+			    _y * image.cb, color);
+		}
 	    }
 	}
     }
@@ -128,7 +181,7 @@ void draw_rect(image_t image, rectangle_t rect)
  *   --     --
  *      ===
  */
-void draw_circle(image_t image, circle_t circle)
+void draw_circle(image_t image, circle_t circle, uint8_t color)
 {
     int32_t i = 0, k = 0, _x = 0, _y = 0;
     uint8_t *ptr = NULL;
@@ -140,7 +193,7 @@ void draw_circle(image_t image, circle_t circle)
 	_y = circle.r * sin((PI * i) / 180) + circle.y;
 
 	if(_x >= 0 && _x < image.height && _y >= 0 && _y < image.width){
-	    draw_set_pixels(image.buf + (image.width * image.cb * _x) + _y * image.cb);
+	    draw_set_pixels(image.buf + (image.width * image.cb * _x) + _y * image.cb, color);
 	}
     }
 }
@@ -156,7 +209,7 @@ void draw_circle(image_t image, circle_t circle)
  *     \   /
  *      ===
  */
-void draw_ellipse(image_t image, ellipse_t ellipse)
+void draw_ellipse(image_t image, ellipse_t ellipse, uint8_t color)
 {
     int32_t i = 0, k = 0, _x = 0, _y = 0;
     uint8_t *ptr = NULL;
@@ -168,13 +221,13 @@ void draw_ellipse(image_t image, ellipse_t ellipse)
 	_y = ellipse.y + ellipse.b * sin((PI * i) / 180);
 
 	if (_x >= 0 && _x < image.height && _y >= 0 && _y < image.width) {
-	    draw_set_pixels(image.buf + (image.width * image.cb * _x) + _y * image.cb);
+	    draw_set_pixels(image.buf + (image.width * image.cb * _x) + _y * image.cb, color);
 	}
     }
 }
 
 /*------------------------------------------------------------------------------*/
-int draw_multi_shapes(image_t image, const char *filename)
+int draw_multi_shapes(image_t image, const char *filename, uint8_t color)
 {
     int ret = 0;
     FILE *file = NULL;
@@ -199,24 +252,24 @@ int draw_multi_shapes(image_t image, const char *filename)
 	    util_fite(((fscanf(file, "%d %d %d", &plus.x, &plus.y, &plus.len)) != 3),
 		    LOG_ERR("%s reading failed!\n", shape_name));
 
-	    draw_plus(image, plus);
+	    draw_plus(image, plus, color);
 	} else if (!strcmp("rectangle", shape_name)) {
 	    util_fite(((fscanf(file, "%d %d %d %d", &rect.x, &rect.y, &rect.width,
 				&rect.height)) != 4),
 		    LOG_ERR("%s reading failed!\n", shape_name));
 
-	    draw_rect(image, rect);
+	    draw_rect(image, rect, 1, color);
 	} else if (!strcmp("circle", shape_name)) {
 	    util_fite(((fscanf(file, "%d %d %d", &circle.x, &circle.y, &circle.r)) != 3),
 		    LOG_ERR("%s reading failed!\n", shape_name));
 
-	    draw_circle(image, circle);
+	    draw_circle(image, circle, color);
 	} else if (!strcmp("ellipse", shape_name)) {
 	    util_fite(((fscanf(file, "%d %d %d %d", &ellipse.x, &ellipse.y,
 				&ellipse.a, &ellipse.b)) != 4),
 		    LOG_ERR("%s reading failed!\n", shape_name));
 
-	    draw_ellipse(image, ellipse);
+	    draw_ellipse(image, ellipse, color);
 	} else {
 	    LOG_ERR("Shape '%s' is not supported!\n", shape_name);
 	    goto fail;

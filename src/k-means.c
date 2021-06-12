@@ -20,7 +20,11 @@
 #define LOG_LEVEL LOG_LEVEL_CONF_KMEANS
 #endif /* LOG_LEVEL_CONF_KMEANS */
 /*------------------------------------------------------------------------------*/
-#define HISTOGRAM_LENGTH 256
+/* Decrease it for performance.
+ * Increase it for reliability. */
+#define KMEANS_TEST_COUNT   5
+
+#define HISTOGRAM_LENGTH    256
 
 /*------------------------------------------------------------------------------*/
 typedef struct cluster {
@@ -136,13 +140,8 @@ success:
 }
 
 /*------------------------------------------------------------------------------*/
-/* TODO: seperate this function for (n != 2) cases.
- * kmeans_get_thold return threshold value for converting image into binary.
- *
- * Calculate more than once and make the decision based on the number of results
- * that are close to each other.
- */
-int kmeans_get_thold(uint8_t n, image_t image)
+/* TODO: seperate this function for (n != 2) cases. */
+static int kmeans_get_thold_do(uint8_t n, image_t image)
 {
     int ret = 0;
     uint32_t *histogram = NULL, i = 0;
@@ -180,6 +179,29 @@ fail:
 success:
     sfree(histogram);
     sfree(clusters);
+    return ret;
+}
+
+/*------------------------------------------------------------------------------*/
+int kmeans_get_thold(uint8_t n, image_t image)
+{
+    int ret = 0, threshold_sum = 0, i = 0;
+
+    for (i = 0; i < KMEANS_TEST_COUNT; i++) {
+	util_fit(((ret = kmeans_get_thold_do(n, image)) < 0));
+	threshold_sum += ret;
+    }
+    /* Little hack here: make it darker to eliminate noises more. */
+    ret = (threshold_sum / KMEANS_TEST_COUNT) - 10;
+
+    LOG_DBG("avg -> threshold = %d\n", ret);
+    goto success;
+
+fail:
+    LOG_ERR("%s failed!\n", __func__);
+    ret = -1;
+
+success:
     return ret;
 }
 

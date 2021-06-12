@@ -39,10 +39,11 @@ typedef struct {
 } ellipse_t;
 
 /*------------------------------------------------------------------------------*/
-void draw_plus(image_t, plus_t);
-void draw_rect(image_t, rectangle_t);
-void draw_circle(image_t, circle_t);
-void draw_ellipse(image_t, ellipse_t);
-int draw_multi_shapes(image_t, const char *);
+void draw_plus(image_t, plus_t, uint8_t);
+void draw_rect(image_t, rectangle_t, uint8_t, uint8_t);
+void draw_filled_rect(image_t, rectangle_t, uint8_t, uint8_t);
+void draw_circle(image_t, circle_t, uint8_t);
+void draw_ellipse(image_t, ellipse_t, uint8_t);
+int draw_multi_shapes(image_t, const char *, uint8_t);
 
 #endif /* DRAW_H_ */

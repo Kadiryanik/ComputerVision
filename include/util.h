@@ -63,6 +63,16 @@ typedef struct {
     } while (0)
 
 /*------------------------------------------------------------------------------*/
+struct str_node {
+    char *str;		    /* data */
+    struct str_node *next;  /* next str-node pointer */
+};
+typedef struct str_node str_node_t;
+
+str_node_t* util_sl_insert(str_node_t **, char *);
+void util_sl_free(str_node_t **);
+
+/*------------------------------------------------------------------------------*/
 int plot_histogram(const uint32_t* const);
 
 #endif /* UTIL_H_ */

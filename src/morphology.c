@@ -26,7 +26,7 @@
 /* HFL	    : Half Frame Len
  * Example  : HFL=4 -> Checks 8x8 frame for neighbors
  * Note	    : If this is too small then X. pass count will increase */
-extern long nbr_hfl;
+extern uint8_t nbr_hfl;
 
 enum region_states {
     REGION_DATA = 0,

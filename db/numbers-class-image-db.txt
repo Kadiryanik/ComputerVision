@@ -1,0 +1,21 @@
+CLASS zero
+images/backup/numbers/0.bmp
+CLASS one
+images/backup/numbers/1.bmp
+CLASS two
+images/backup/numbers/2.bmp
+CLASS three
+images/backup/numbers/3.bmp
+CLASS four
+images/backup/numbers/4.bmp
+CLASS five
+images/backup/numbers/5.bmp
+CLASS six
+images/backup/numbers/6.bmp
+CLASS seven
+images/backup/numbers/7.bmp
+CLASS eight
+images/backup/numbers/8.bmp
+CLASS nine
+images/backup/numbers/9.bmp
+EOF
